@@ -11,7 +11,6 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmar_senha, setConfirmar_senha] = useState("");
-  const [nomeUsuario, setNomeUsuario] = useState("");
 
   const [mostrar_senha, setMostrar_senha] = useState(false);
   const [mostrar_confirmar_senha, setMostrar_confirmar_senha] = useState(false);
@@ -138,7 +137,7 @@ export default function Home() {
           shapeRendering="crispEdges"
         />
 
-        {/* figura: fundo do input "Email" */}
+        {/* figura: fundo do input "senha" */}
         <Rect
           width={411.266}
           height={44.792}
@@ -150,35 +149,12 @@ export default function Home() {
           shapeRendering="crispEdges"
         />
 
-        {/* figura: borda do input "Nome de usuário" */}
-        <Rect
-          width={410.266}
-          height={43.792}
-          x={144.367}
-          y={711.355}
-          stroke="#5A2A27"
-          rx={7.5}
-          shapeRendering="crispEdges"
-        />
-
-        {/* figura: fundo do input "senha" */}
-        <Rect
-          width={411.266}
-          height={44.792}
-          x={143.867}
-          y={791.855}
-          fill="#DDA15E"
-          fillOpacity={0.9}
-          rx={8}
-          shapeRendering="crispEdges"
-        />
-
         {/* figura: borda do input "senha" */}
         <Rect
           width={410.266}
           height={43.792}
           x={144.367}
-          y={792.355}
+          y={711.355}
           stroke="#5A2A27"
           rx={7.5}
           shapeRendering="crispEdges"
@@ -212,7 +188,7 @@ export default function Home() {
           width={411}
           height={44.792}
           x={143.867}
-          y={871.355}
+          y={791.855}
           fill="#DDA15E"
           fillOpacity={0.9}
           rx={8}
@@ -224,7 +200,7 @@ export default function Home() {
           width={410}
           height={43.792}
           x={144.367}
-          y={872.855}
+          y={792.355}
           stroke="#5A2A27"
           rx={7.5}
           shapeRendering="crispEdges"
@@ -419,7 +395,7 @@ export default function Home() {
           // equivalente a: x-50 (para o placeholder ficar à esqueda)
           left: 95,
           // equivalente a: y
-          top: 488,
+          top: 438,
           // equivalente a: width
           width: 411.266,
           // equivalente a: height
@@ -438,7 +414,7 @@ export default function Home() {
         style={{
           position: "absolute",
           left: 300,
-          top: 503,
+          top: 453,
         }}
       />
 
@@ -449,7 +425,7 @@ export default function Home() {
           // equivalente a: x-50 (para o placeholder ficar à esqueda)
           left: 95,
           // equivalente a: y
-          top: 538,
+          top: 488,
           // equivalente a: width
           width: 411.266,
           // equivalente a: height
@@ -469,25 +445,8 @@ export default function Home() {
         style={{
           position: "absolute",
           left: 300,
-          top: 553,
+          top: 503,
         }}
-      />
-
-      <TextInput
-        style={{
-             position: "absolute",
-             // equivalente a: x-50 (para o placeholder ficar à esqueda)
-             left: 95,
-              // equivalente a: y
-              top: 438,
-              // equivalente a: width
-            width: 411.266,
-              // equivalente a: height
-             height: 44.792,
-              backgroundColor: "transparent",
-             fontSize: 13,
-         }}
-         value={nomeUsuario} onChangeText={setNomeUsuario} placeholder="Nome de usuário"
       />
 
       {/* "apertável" para escolher imagem */}

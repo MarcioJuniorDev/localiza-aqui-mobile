@@ -10,7 +10,6 @@ export default function EditarPerfil() {
     const [nome, setNome] = useState("Rafael Lange");
     const [cpf, setCpf] = useState("");
     const [senha, setSenha] = useState("12345678");
-    const [nomeUsuario, setNomeUsuario] = useState("Rafaell123");
     const [email, setEmail] = useState("rafinha@gmail.com");
 
     const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -210,7 +209,7 @@ export default function EditarPerfil() {
                     width={411}
                     height={58}
                     x={150}
-                    y={614}
+                    y={535}
                     fill="#DDA15E"
                     fillOpacity={0.9}
                     rx={8}
@@ -222,7 +221,7 @@ export default function EditarPerfil() {
                     width={410}
                     height={57}
                     x={150.5}
-                    y={614.5}
+                    y={535.5}
                     stroke="#5A2A27"
                     rx={7.5}
                     shapeRendering="crispEdges"
@@ -312,7 +311,6 @@ export default function EditarPerfil() {
                     top: 400,
                 }}
             />
-
             <TextInput
                 style={{
                     position: "absolute",
@@ -320,23 +318,6 @@ export default function EditarPerfil() {
                     left: 92,
                     // equivalente a: y
                     top: 435,
-                    // equivalente a: width
-                    width: 411.266,
-                    // equivalente a: height
-                    height: 44.792,
-                    backgroundColor: "transparent",
-                    fontSize: 13,
-                }}
-                value={nomeUsuario} onChangeText={setNomeUsuario} placeholder="Nome de usuário"
-            />
-
-            <TextInput
-                style={{
-                    position: "absolute",
-                    // equivalente a: x-50 (para o placeholder ficar à esqueda)
-                    left: 92,
-                    // equivalente a: y
-                    top: 485,
                     // equivalente a: width
                     width: 411.266,
                     // equivalente a: height
