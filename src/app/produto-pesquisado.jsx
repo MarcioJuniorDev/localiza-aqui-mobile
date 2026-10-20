@@ -78,54 +78,6 @@ export default function Produto_pesquisado() {
             .eq("nome", "mercadoRegistro")
     }
 
-    async function curtir(index) {
-        const registro = registros[index];
-
-        console.log("REGISTRO:", registro);
-        console.log("ID:", registro?.idRegistro);
-        console.log("LIKES ATUAL:", registro?.likes);
-
-        if (!registro || !registro.idRegistro) {
-            console.error("Registro ou idRegistro não encontrado.");
-            return;
-        }
-
-        const novoCurtido = !registro.curtido;
-
-        const novasCurtidas = novoCurtido
-            ? Number(registro.likes || 0) + 1
-            : Math.max(0, Number(registro.likes || 0) - 1);
-
-        console.log("NOVOS LIKES:", novasCurtidas);
-
-        const { data, error } = await supabase
-            .from("registros")
-            .update({
-                likes: novasCurtidas
-            })
-            .eq("idRegistro", registro.idRegistro)
-            .select();
-
-        if (error) {
-            console.error("ERRO DO SUPABASE:", error);
-            return;
-        }
-
-        console.log("REGISTRO ATUALIZADO NO BANCO:", data);
-
-        setRegistros(registros =>
-            registros.map((item, i) => {
-                if (i !== index) return item;
-
-                return {
-                    ...item,
-                    curtido: novoCurtido,
-                    likes: novasCurtidas
-                };
-            })
-        );
-    }
-
     async function adicionarCarrinho(produto) {
         try {
             const dados = await AsyncStorage.getItem("carrinho");
@@ -232,6 +184,7 @@ export default function Produto_pesquisado() {
         }
 
         carregarDados();
+        fnLerUsuarioLocalmente();
     }, [pesquisa]);
 
     // verificação se produto ja existe no carrinho
@@ -268,6 +221,20 @@ export default function Produto_pesquisado() {
             setQuantidadeCarrinho(produto.quantidade);
         } else {
             setQuantidadeCarrinho(0);
+        }
+    }
+
+    // carregamento dos dados salvos localmente
+
+    const CHAVE_USUARIO = '@usuario';
+
+    async function fnLerUsuarioLocalmente() {
+        try {
+            const json = await AsyncStorage.getItem(CHAVE_USUARIO);
+            console.log(json);
+        } catch (e) {
+            console.error('Erro ao ler usuário:', e);
+            return null;
         }
     }
 
