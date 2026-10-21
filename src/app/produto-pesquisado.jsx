@@ -41,7 +41,24 @@ export default function Produto_pesquisado() {
             return;
         }
 
-        const registrosFormatados = data.map(registro => {
+        // NOVO: busca as curtidas do usuário uma única vez
+        const idU = await fnLerUsuarioLocalmente();
+        let idsCurtidos = new Set();
+
+        if (idU != null) {
+            const { data: curtidas, error: erroCurtidas } = await supabase
+                .from("curtidas")
+                .select("fkRegistro")
+                .eq("fkUsuario", idU);
+
+            if (erroCurtidas) {
+                console.error("Erro ao buscar curtidas:", erroCurtidas);
+            } else {
+                idsCurtidos = new Set(curtidas.map((c) => c.fkRegistro));
+            }
+        }
+
+        const registrosFormatados = data.map((registro) => {
             let mercado;
 
             switch (registro.mercadoRegistro) {
@@ -64,7 +81,8 @@ export default function Produto_pesquisado() {
             return {
                 ...registro,
                 mercado,
-                data: new Date(registro.criado_em).toLocaleDateString("pt-BR")
+                curtido: idsCurtidos.has(registro.idRegistro), // NOVO
+                data: new Date(registro.criado_em).toLocaleDateString("pt-BR"),
             };
         });
 
@@ -225,17 +243,78 @@ export default function Produto_pesquisado() {
     }
 
     // carregamento dos dados salvos localmente
-
     const CHAVE_USUARIO = '@usuario';
 
     async function fnLerUsuarioLocalmente() {
         try {
             const json = await AsyncStorage.getItem(CHAVE_USUARIO);
-            console.log(json);
+            if (json == null) return null;
+
+            const usuario = JSON.parse(json);
+            return usuario.idUsuario;
         } catch (e) {
             console.error('Erro ao ler usuário:', e);
             return null;
         }
+    }
+
+    // curtidas
+    async function fnCurtir(idR) {
+        const idU = await fnLerUsuarioLocalmente();
+
+        if (idU == null) {
+            console.error("Usuário não encontrado no armazenamento local");
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from("curtidas")
+            .select("*")
+            .eq("fkUsuario", idU)
+            .eq("fkRegistro", idR)
+            .maybeSingle();
+
+        if (error) {
+            console.error("Erro ao buscar curtida:", error);
+            return;
+        }
+
+        const jaCurtiu = data !== null;
+
+        if (jaCurtiu) {
+            const { error } = await supabase
+                .from("curtidas")
+                .delete()
+                .eq("fkUsuario", idU)
+                .eq("fkRegistro", idR);
+
+            if (error) {
+                console.error("Erro ao remover curtida:", error);
+                return;
+            }
+        } else {
+            const { error } = await supabase
+                .from("curtidas")
+                .insert({ fkRegistro: idR, fkUsuario: idU });
+
+            if (error) {
+                console.error("Erro ao curtir:", error);
+                return;
+            }
+        }
+
+        // ATUALIZA A TELA
+        setRegistros((anteriores) =>
+            anteriores.map((r) =>
+                r.idRegistro === idR
+                    ? {
+                        ...r,
+                        curtido: !jaCurtiu,
+                        likes: jaCurtiu ? r.likes - 1 : r.likes + 1,
+                    }
+                    : r
+            )
+        );
     }
 
     return (
@@ -305,7 +384,7 @@ export default function Produto_pesquisado() {
 
                 {/* map dos registros */}
                 {registros.map((registro, index) => (
-                    <G key={index} transform={`translate(0, ${index * 150})`}>
+                    <G key={registro.idRegistro} transform={`translate(0, ${index * 150})`}>
 
                         <SvgText
                             x={116}
@@ -363,7 +442,7 @@ export default function Produto_pesquisado() {
 
 
                         {/* coração */}
-                        <G onPress={() => curtir(index)}>
+                        <G onPress={() => fnCurtir(registro.idRegistro)}>
                             <Image
                                 x={540}
                                 y={525}
