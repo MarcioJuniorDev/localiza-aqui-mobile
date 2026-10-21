@@ -41,7 +41,24 @@ export default function Produto_pesquisado() {
             return;
         }
 
-        const registrosFormatados = data.map(registro => {
+        // NOVO: busca as curtidas do usuário uma única vez
+        const idU = await fnLerUsuarioLocalmente();
+        let idsCurtidos = new Set();
+
+        if (idU != null) {
+            const { data: curtidas, error: erroCurtidas } = await supabase
+                .from("curtidas")
+                .select("fkRegistro")
+                .eq("fkUsuario", idU);
+
+            if (erroCurtidas) {
+                console.error("Erro ao buscar curtidas:", erroCurtidas);
+            } else {
+                idsCurtidos = new Set(curtidas.map((c) => c.fkRegistro));
+            }
+        }
+
+        const registrosFormatados = data.map((registro) => {
             let mercado;
 
             switch (registro.mercadoRegistro) {
@@ -64,7 +81,8 @@ export default function Produto_pesquisado() {
             return {
                 ...registro,
                 mercado,
-                data: new Date(registro.criado_em).toLocaleDateString("pt-BR")
+                curtido: idsCurtidos.has(registro.idRegistro), // NOVO
+                data: new Date(registro.criado_em).toLocaleDateString("pt-BR"),
             };
         });
 
@@ -76,54 +94,6 @@ export default function Produto_pesquisado() {
             .from("mercados")
             .select(idMercado)
             .eq("nome", "mercadoRegistro")
-    }
-
-    async function curtir(index) {
-        const registro = registros[index];
-
-        console.log("REGISTRO:", registro);
-        console.log("ID:", registro?.idRegistro);
-        console.log("LIKES ATUAL:", registro?.likes);
-
-        if (!registro || !registro.idRegistro) {
-            console.error("Registro ou idRegistro não encontrado.");
-            return;
-        }
-
-        const novoCurtido = !registro.curtido;
-
-        const novasCurtidas = novoCurtido
-            ? Number(registro.likes || 0) + 1
-            : Math.max(0, Number(registro.likes || 0) - 1);
-
-        console.log("NOVOS LIKES:", novasCurtidas);
-
-        const { data, error } = await supabase
-            .from("registros")
-            .update({
-                likes: novasCurtidas
-            })
-            .eq("idRegistro", registro.idRegistro)
-            .select();
-
-        if (error) {
-            console.error("ERRO DO SUPABASE:", error);
-            return;
-        }
-
-        console.log("REGISTRO ATUALIZADO NO BANCO:", data);
-
-        setRegistros(registros =>
-            registros.map((item, i) => {
-                if (i !== index) return item;
-
-                return {
-                    ...item,
-                    curtido: novoCurtido,
-                    likes: novasCurtidas
-                };
-            })
-        );
     }
 
     async function adicionarCarrinho(produto) {
@@ -232,6 +202,7 @@ export default function Produto_pesquisado() {
         }
 
         carregarDados();
+        fnLerUsuarioLocalmente();
     }, [pesquisa]);
 
     // verificação se produto ja existe no carrinho
@@ -269,6 +240,81 @@ export default function Produto_pesquisado() {
         } else {
             setQuantidadeCarrinho(0);
         }
+    }
+
+    // carregamento dos dados salvos localmente
+    const CHAVE_USUARIO = '@usuario';
+
+    async function fnLerUsuarioLocalmente() {
+        try {
+            const json = await AsyncStorage.getItem(CHAVE_USUARIO);
+            if (json == null) return null;
+
+            const usuario = JSON.parse(json);
+            return usuario.idUsuario;
+        } catch (e) {
+            console.error('Erro ao ler usuário:', e);
+            return null;
+        }
+    }
+
+    // curtidas
+    async function fnCurtir(idR) {
+        const idU = await fnLerUsuarioLocalmente();
+
+        if (idU == null) {
+            console.error("Usuário não encontrado no armazenamento local");
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from("curtidas")
+            .select("*")
+            .eq("fkUsuario", idU)
+            .eq("fkRegistro", idR)
+            .maybeSingle();
+
+        if (error) {
+            console.error("Erro ao buscar curtida:", error);
+            return;
+        }
+
+        const jaCurtiu = data !== null;
+
+        if (jaCurtiu) {
+            const { error } = await supabase
+                .from("curtidas")
+                .delete()
+                .eq("fkUsuario", idU)
+                .eq("fkRegistro", idR);
+
+            if (error) {
+                console.error("Erro ao remover curtida:", error);
+                return;
+            }
+        } else {
+            const { error } = await supabase
+                .from("curtidas")
+                .insert({ fkRegistro: idR, fkUsuario: idU });
+
+            if (error) {
+                console.error("Erro ao curtir:", error);
+                return;
+            }
+        }
+
+        // ATUALIZA A TELA
+        setRegistros((anteriores) =>
+            anteriores.map((r) =>
+                r.idRegistro === idR
+                    ? {
+                        ...r,
+                        curtido: !jaCurtiu,
+                        likes: jaCurtiu ? r.likes - 1 : r.likes + 1,
+                    }
+                    : r
+            )
+        );
     }
 
     return (
@@ -338,7 +384,7 @@ export default function Produto_pesquisado() {
 
                 {/* map dos registros */}
                 {registros.map((registro, index) => (
-                    <G key={index} transform={`translate(0, ${index * 150})`}>
+                    <G key={registro.idRegistro} transform={`translate(0, ${index * 150})`}>
 
                         <SvgText
                             x={116}
@@ -396,7 +442,7 @@ export default function Produto_pesquisado() {
 
 
                         {/* coração */}
-                        <G onPress={() => curtir(index)}>
+                        <G onPress={() => fnCurtir(registro.idRegistro)}>
                             <Image
                                 x={540}
                                 y={525}

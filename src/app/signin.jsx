@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, TextInput, View, Alert } from "react-native";
 import { router } from "expo-router";
 import { supabase } from './../../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Home() {
 
@@ -63,9 +64,25 @@ export default function Home() {
         return;
       }
 
-      router.push("/home");
+      const { senha: _, ...usuarioSemSenha } = usuario;
+      await fnSalvarUsuarioLocalmente(usuarioSemSenha);
+
+      router.replace("/home");
     } catch (err) {
+      console.error("Erro no login:", err);
       Alert.alert("Erro", "Não foi possível fazer login. Tente novamente.");
+    }
+  }
+
+  // armazenamento local dos dados do usuário
+  const CHAVE_USUARIO = '@usuario';
+
+  async function fnSalvarUsuarioLocalmente(usuario) {
+    try {
+      await AsyncStorage.setItem(CHAVE_USUARIO, JSON.stringify(usuario));
+      console.log('Usuário salvo com sucesso');
+    } catch (e) {
+      console.error('Erro ao salvar usuário:', e);
     }
   }
 
