@@ -4,10 +4,16 @@ import { TextInput, View, Pressable, Text } from "react-native";
 import { router } from "expo-router";
 import { BarraNavegacao } from '../components/barraNavegação'
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from './../../lib/supabase';
 
 export default function Pesquisa() {
 
     const [pesquisa, setPesquisa] = useState("");
+
+    // autocomplete
+    const [textoBusca, setTextoBusca] = useState("");
+    const [produtos, setProdutos] = useState([]);
+
 
     // histórico
     const [historico, setHistorico] = useState([]);
@@ -66,6 +72,29 @@ export default function Pesquisa() {
     useEffect(() => {
         carregarHistorico();
     }, []);
+
+    // Busca produtos a partir do que o usuário digita
+    async function buscarProdutos(texto) {
+        setTextoBusca(texto);
+
+        if (texto.trim() === "") {
+            setProdutos([]);
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from("produtos")
+            .select("nome")
+            .ilike("nome", `${texto}%`);
+
+            if (error) {
+            console.error("Erro ao buscar produtos:", error);
+            return;
+        }
+
+        setProdutos(data);
+    }
+
     return (
         <View style={{ flex: 1 }}>
             <Svg
@@ -146,32 +175,66 @@ export default function Pesquisa() {
                     href={require("../assets/img/icone-pesquisa.png")}
                 />
 
-                
+
             </Svg>
             {/* pesquisa */}
             <TextInput
                 style={{
-
                     position: "absolute",
-                    // equivalente a: x-50 (para o placeholder ficar à esqueda)
                     left: 65,
-                    // equivalente a: y
                     top: 237,
-                    // equivalente a: width
                     width: 603,
-                    // equivalente a: height
                     height: 45,
                     backgroundColor: "transparent",
                     fontSize: 13,
                 }}
-                value={pesquisa} onChangeText={setPesquisa} returnKeyType="search"
-                blurOnSubmit={true} placeholder="Pesquisar produto" onSubmitEditing={() => {
-                    salvarLocal(pesquisa); router.push({
+                value={pesquisa}
+                onChangeText={(texto) => {
+                    const textoFormatado = texto
+                        .toLocaleLowerCase("pt-BR")
+                        .replace(/(^|\s)[\p{L}]/gu, (letra) =>
+                            letra.toLocaleUpperCase("pt-BR")
+                        );
+
+                    setPesquisa(textoFormatado);
+                    buscarProdutos(textoFormatado);
+                }}
+                returnKeyType="search"
+                submitBehavior="blurAndSubmit"
+                placeholder="Pesquisar produto"
+                onSubmitEditing={() => {
+                    salvarLocal(pesquisa);
+                    router.push({
                         pathname: "/produto-pesquisado",
                         params: { pesquisa },
-                    })
+                    });
                 }}
             />
+
+            {/* lista de sugestões */}
+            {produtos.map((item, index) => (
+                <Pressable
+                    key={index}
+                    onPress={() => {
+                        setPesquisa(item.nome);
+                        setProdutos([]);
+                    }}
+                    style={{
+                        position: "absolute",
+                        left: 35,
+                        top: 273 + index * 35,
+                        width: '85%',
+                        height: 30,
+                        justifyContent: "center",
+                        backgroundColor: "#FEFAE0",
+                        zIndex: 10,
+                        elevation: 10,
+                    }}
+                >
+                    <Text style={{ fontSize: 14 }}>{item.nome}</Text>
+                </Pressable>
+            ))}
+
             <BarraNavegacao />
             <View
                 style={{
