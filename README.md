@@ -3,12 +3,17 @@ Quando testar o projeto, rode ele no celular pelo expo go. Rodando na web ou no 
 
 # Baixando o projeto
 - Instale o node_modules com ```npm install```.
-- Crie um arquivo .env na raiz do projeto. Coloque as credenciais de acesso do Supabase (URL e Anon Key).
 
 # Rotina de Atualização de Dependências
 - ```npm i```: instala o node_modules no projeto.
 - ```npx expo install --check```: verifica se há dependências para serem atualizadas do expo. Se sim, pergunta se deseja atualizar.
 - ```npm audit fix```: atualiza as dependências que estão desatualizadas.
+
+# Testando o projeto no Expo Go
+1 - Crie um arquivo .env na raiz do projeto. Coloque as credenciais de acesso do Supabase (URL e Anon Key).
+2 - No terminal:
+- ```npx expo start```: roda o projeto. Escaneie o Qr Code no app para testar.
+  -> use a propriedade ```--tunnel ngrok``` para poder se conectar ao projeto mesmo não estando na mesma rede.
 
 # Transformando Figma em código
 
