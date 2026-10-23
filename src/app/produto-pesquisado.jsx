@@ -33,7 +33,7 @@ export default function Produto_pesquisado() {
     async function buscarRegistros(id) {
         const { data, error } = await supabase
             .from("registros")
-            .select("idRegistro, criado_em, preço, likes, mercadoRegistro")
+            .select("idRegistro, criado_em, preço, mercadoRegistro")
             .eq("produtoRegistro", id);
 
         if (error) {
@@ -41,20 +41,26 @@ export default function Produto_pesquisado() {
             return;
         }
 
-        // NOVO: busca as curtidas do usuário uma única vez
         const idU = await fnLerUsuarioLocalmente();
-        let idsCurtidos = new Set();
 
-        if (idU != null) {
+        // busca todas as curtidas dos registros retornados
+        const idsRegistros = data.map((r) => r.idRegistro);
+        const contagem = {};          // { idRegistro: total }
+        const idsCurtidos = new Set(); // registros que o usuário curtiu
+
+        if (idsRegistros.length > 0) {
             const { data: curtidas, error: erroCurtidas } = await supabase
                 .from("curtidas")
-                .select("fkRegistro")
-                .eq("fkUsuario", idU);
+                .select("fkRegistro, fkUsuario")
+                .in("fkRegistro", idsRegistros);
 
             if (erroCurtidas) {
                 console.error("Erro ao buscar curtidas:", erroCurtidas);
             } else {
-                idsCurtidos = new Set(curtidas.map((c) => c.fkRegistro));
+                curtidas.forEach((c) => {
+                    contagem[c.fkRegistro] = (contagem[c.fkRegistro] || 0) + 1;
+                    if (c.fkUsuario === idU) idsCurtidos.add(c.fkRegistro);
+                });
             }
         }
 
@@ -65,15 +71,12 @@ export default function Produto_pesquisado() {
                 case 1:
                     mercado = "Assaí";
                     break;
-
                 case 2:
                     mercado = "Extra";
                     break;
-
                 case 3:
                     mercado = "Sonda";
                     break;
-
                 default:
                     mercado = "Desconhecido";
             }
@@ -81,7 +84,8 @@ export default function Produto_pesquisado() {
             return {
                 ...registro,
                 mercado,
-                curtido: idsCurtidos.has(registro.idRegistro), // NOVO
+                likes: contagem[registro.idRegistro] || 0,
+                curtido: idsCurtidos.has(registro.idRegistro),
                 data: new Date(registro.criado_em).toLocaleDateString("pt-BR"),
             };
         });
