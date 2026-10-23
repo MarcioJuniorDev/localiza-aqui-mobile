@@ -86,6 +86,7 @@ export default function Pesquisa() {
             .from("produtos")
             .select("nome")
             .ilike("nome", `${texto}%`);
+            
 
             if (error) {
             console.error("Erro ao buscar produtos:", error);
