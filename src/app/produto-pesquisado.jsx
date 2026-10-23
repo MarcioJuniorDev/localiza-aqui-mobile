@@ -310,7 +310,7 @@ export default function Produto_pesquisado() {
                     ? {
                         ...r,
                         curtido: !jaCurtiu,
-                        likes: jaCurtiu ? r.likes - 1 : r.likes + 1,
+                        likes: jaCurtiu ? Math.max(0, r.likes - 1) : r.likes + 1,
                     }
                     : r
             )
