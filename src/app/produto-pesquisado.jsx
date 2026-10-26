@@ -1,10 +1,9 @@
-import Svg, { Path, Rect, Circle, ClipPath, Image, Defs, G, Text as SvgText, Pattern, Use } from "react-native-svg";
-import { View, Text, TextInput, Pressable, Alert } from "react-native";
-import { useLocalSearchParams } from "expo-router";
-import { BarraNavegacao } from '../components/barraNavegação'
-import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
+import { Text, TextInput, View } from "react-native";
+import Svg, { G, Image, Path, Rect, Text as SvgText } from "react-native-svg";
+import { BarraNavegacao } from '../components/barraNavegação';
 import { supabase } from './../../lib/supabase';
 
 export default function Produto_pesquisado() {
@@ -64,6 +63,8 @@ export default function Produto_pesquisado() {
             }
         }
 
+
+
         const registrosFormatados = data.map((registro) => {
             let mercado;
 
@@ -96,92 +97,10 @@ export default function Produto_pesquisado() {
     async function buscarMercadoPorId() {
         const { data, error } = await supabase
             .from("mercados")
-            .select(idMercado)
             .eq("nome", "mercadoRegistro")
     }
 
-    async function adicionarCarrinho(produto) {
-        try {
-            const dados = await AsyncStorage.getItem("carrinho");
 
-            const carrinhoAtual = dados
-                ? JSON.parse(dados)
-                : [];
-
-            const mercados = {
-                assai: Number(
-                    registros.find(r => r.mercado === "Assaí")?.preco.replace(",", ".") || 0
-                ),
-                extra: Number(
-                    registros.find(r => r.mercado === "Extra")?.preco.replace(",", ".") || 0
-                ),
-                sonda: Number(
-                    registros.find(r => r.mercado === "Sonda")?.preco.replace(",", ".") || 0
-                )
-            };
-
-            const produtoExiste = carrinhoAtual.find(
-                item => item.nome === produto.nome
-            );
-
-            let novoCarrinho;
-
-            if (produtoExiste) {
-
-                novoCarrinho = carrinhoAtual.map(item =>
-                    item.nome === produto.nome
-                        ? {
-                            ...item,
-                            mercados,
-                            quantidade: item.quantidade + 1
-                        }
-                        : item
-                );
-
-            } else {
-
-                novoCarrinho = [
-                    ...carrinhoAtual,
-                    {
-                        id: produto.id,
-                        nome: produto.nome,
-                        mercados,
-                        quantidade: 1
-                    }
-                ];
-
-            }
-
-            await AsyncStorage.setItem(
-                "carrinho",
-                JSON.stringify(novoCarrinho)
-            );
-
-            setCarrinho(novoCarrinho);
-            setProdutoNoCarrinho(true);
-            const produtoAtualizado = novoCarrinho.find(
-                item => item.nome === produto.nome
-            );
-
-            setQuantidadeCarrinho(produtoAtualizado.quantidade);
-
-        } catch (error) {
-            console.log("Erro ao adicionar ao carrinho:", error);
-        }
-    }
-
-
-    const [carrinho, setCarrinho] = useState([]);
-
-    async function carregarCarrinho() {
-        const dados = await AsyncStorage.getItem("carrinho");
-
-        if (dados) {
-            setCarrinho(JSON.parse(dados));
-        } else {
-            setCarrinho([]);
-        }
-    }
 
     useEffect(() => {
         async function carregarDados() {
@@ -209,21 +128,96 @@ export default function Produto_pesquisado() {
         fnLerUsuarioLocalmente();
     }, [pesquisa]);
 
-    // verificação se produto ja existe no carrinho
+    const [carrinho, setCarrinho] = useState([]);
     const [produtoNoCarrinho, setProdutoNoCarrinho] = useState(false);
-    async function verificarCarrinho(nomeProduto) {
-        const dados = await AsyncStorage.getItem("carrinho");
 
-        const carrinho = dados
-            ? JSON.parse(dados)
-            : [];
-
-        const existe = carrinho.some(
-            item => item.nome === nomeProduto
-        );
-
-        setProdutoNoCarrinho(existe);
+    // converte "12,50" (string) ou 12.5 (número) em número
+    function paraNumero(valor) {
+        if (valor == null) return 0;
+        if (typeof valor === "number") return valor;
+        return Number(String(valor).replace(",", ".")) || 0;
     }
+
+    // preço do mercado: pega o registro mais recente daquele mercado
+    function precoDoMercado(idMercado) {
+        const doMercado = registros
+            .filter((r) => r.mercadoRegistro === idMercado)
+            .sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em));
+
+        return paraNumero(doMercado[0]?.preço);
+    }
+
+    async function adicionarCarrinho(produto) {
+        try {
+            const dados = await AsyncStorage.getItem("carrinho");
+            const carrinhoAtual = dados ? JSON.parse(dados) : [];
+
+            const mercados = {
+                assai: precoDoMercado(1),
+                extra: precoDoMercado(2),
+                sonda: precoDoMercado(3),
+            };
+
+            const produtoExiste = carrinhoAtual.some(
+                (item) => item.nome === produto.nome
+            );
+
+            let novoCarrinho;
+
+            if (produtoExiste) {
+                novoCarrinho = carrinhoAtual.map((item) =>
+                    item.nome === produto.nome
+                        ? { ...item, quantidade: item.quantidade + 1, mercado: mercados }
+                        : item
+                );
+            } else {
+                novoCarrinho = [
+                    ...carrinhoAtual,
+                    {
+                        id: produto.id ?? idProduto, // veja a observação abaixo
+                        nome: produto.nome,
+                        quantidade: 1,
+                        mercado: mercados,
+                    },
+                ];
+            }
+
+            await AsyncStorage.setItem("carrinho", JSON.stringify(novoCarrinho));
+
+            setCarrinho(novoCarrinho);
+            setProdutoNoCarrinho(true);
+
+            const produtoAtualizado = novoCarrinho.find(
+                (item) => item.nome === produto.nome
+            );
+            setQuantidadeCarrinho(produtoAtualizado.quantidade);
+        } catch (e) {
+            console.error("Erro ao adicionar ao carrinho:", e);
+        }
+    }
+
+    async function carregarCarrinho() {
+        try {
+            const dados = await AsyncStorage.getItem("carrinho");
+            setCarrinho(dados ? JSON.parse(dados) : []);
+        } catch (e) {
+            console.error("Erro ao carregar carrinho:", e);
+            setCarrinho([]);
+        }
+    }
+
+    async function verificarCarrinho(nomeProduto) {
+        try {
+            const dados = await AsyncStorage.getItem("carrinho");
+            const itens = dados ? JSON.parse(dados) : [];
+
+            setProdutoNoCarrinho(itens.some((item) => item.nome === nomeProduto));
+        } catch (e) {
+            console.error("Erro ao verificar carrinho:", e);
+            setProdutoNoCarrinho(false);
+        }
+    }
+
 
     // mostrar quantidade do produto no carrinho
     const [quantidadeCarrinho, setQuantidadeCarrinho] = useState(0);

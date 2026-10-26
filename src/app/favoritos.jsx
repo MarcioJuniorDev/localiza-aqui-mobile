@@ -24,19 +24,19 @@ export default function Favoritos() {
 
     const totalAssai = carrinho.reduce(
         (total, item) =>
-            total + item.mercados.assai * item.quantidade,
+            total + item.mercado.assai * item.quantidade,
         0
     );
 
     const totalExtra = carrinho.reduce(
         (total, item) =>
-            total + item.mercados.extra * item.quantidade,
+            total + item.mercado.extra * item.quantidade,
         0
     );
 
     const totalSonda = carrinho.reduce(
         (total, item) =>
-            total + item.mercados.sonda * item.quantidade,
+            total + item.mercado.sonda * item.quantidade,
         0
     );
 
