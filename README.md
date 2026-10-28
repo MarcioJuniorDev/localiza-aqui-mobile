@@ -32,7 +32,7 @@ Quando testar o projeto, rode ele no celular pelo expo go. Rodando na web ou no 
          feDropShadow
          clipPath
          pattern
-4. Cole o código gerado pelo SVGR como o front-end da página. 
+4. Cole o código gerado pelo SVGR como o front-end da página.  
 
 # Páginas
 
