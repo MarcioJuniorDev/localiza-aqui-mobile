@@ -1,0 +1,8 @@
+[build]
+  command = "npx expo export -p web"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  EXPO_PUBLIC_SUPABASE_URL = "https://blkgaihocjzvqxhpalzy.supabase.co"
+  EXPO_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsa2dhaWhvY2p6dnF4aHBhbHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzNzU1NzQsImV4cCI6MjEwMzk1MTU3NH0.roXabnu7p3g_aU393bBXpP0O3zyMD2fZWKZJALAWz80"
