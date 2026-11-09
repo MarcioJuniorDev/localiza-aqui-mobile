@@ -3,10 +3,38 @@ import Svg, { G, Path, Rect, Ellipse, Image, Circle, Pattern, Use, LinearGradien
 import { router } from "expo-router";
 import { BarraNavegacao } from "../components/barraNavegação";
 import { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect } from "react";
+import { buscarReputacaoUsuario } from "../services/reputacao";
 
 export default function Home() {
     const [localizacao, setLocalizacao] = useState("");
-    const [nivel, setNivel] = useState("prata");
+    const [nivel, setNivel] = useState("Bronze");
+
+    useEffect(() => {
+    async function carregarReputacao() {
+        try {
+            const usuarioSalvo = await AsyncStorage.getItem("@usuario");
+
+            if (!usuarioSalvo) {
+                return;
+            }
+
+            const usuario = JSON.parse(usuarioSalvo);
+
+            const reputacao = await buscarReputacaoUsuario(
+                usuario.idUsuario
+            );
+
+            setNivel(reputacao.rank);
+
+        } catch (error) {
+            console.error("Erro ao carregar reputação:", error);
+        }
+    }
+
+    carregarReputacao();
+}, []);
 
     function fnSair() {
         Alert.alert(
