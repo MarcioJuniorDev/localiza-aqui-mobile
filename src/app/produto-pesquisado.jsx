@@ -5,6 +5,7 @@ import { Text, TextInput, View } from "react-native";
 import Svg, { G, Image, Path, Rect, Text as SvgText } from "react-native-svg";
 import { BarraNavegacao } from '../components/barraNavegação';
 import { supabase } from './../../lib/supabase';
+import { alternarCurtidaRegistro } from "../services/curtidasService";
 
 export default function Produto_pesquisado() {
     // produto pesquisado
@@ -258,62 +259,30 @@ export default function Produto_pesquisado() {
 
     // curtidas
     async function fnCurtir(idR) {
-        const idU = await fnLerUsuarioLocalmente();
+    try {
+        const resultado = await alternarCurtidaRegistro(idR);
 
-        if (idU == null) {
-            console.error("Usuário não encontrado no armazenamento local");
-            return;
-        }
-
-        const { data, error } = await supabase
-            .from("curtidas")
-            .select("*")
-            .eq("fkUsuario", idU)
-            .eq("fkRegistro", idR)
-            .maybeSingle();
-
-        if (error) {
-            console.error("Erro ao buscar curtida:", error);
-            return;
-        }
-
-        const jaCurtiu = data !== null;
-
-        if (jaCurtiu) {
-            const { error } = await supabase
-                .from("curtidas")
-                .delete()
-                .eq("fkUsuario", idU)
-                .eq("fkRegistro", idR);
-
-            if (error) {
-                console.error("Erro ao remover curtida:", error);
-                return;
-            }
-        } else {
-            const { error } = await supabase
-                .from("curtidas")
-                .insert({ fkRegistro: idR, fkUsuario: idU });
-
-            if (error) {
-                console.error("Erro ao curtir:", error);
-                return;
-            }
-        }
-
-        // ATUALIZA A TELA
         setRegistros((anteriores) =>
             anteriores.map((r) =>
                 r.idRegistro === idR
                     ? {
                         ...r,
-                        curtido: !jaCurtiu,
-                        likes: jaCurtiu ? Math.max(0, r.likes - 1) : r.likes + 1,
+                        curtido: resultado.curtido,
+                        likes: resultado.curtido
+                            ? r.likes + 1
+                            : Math.max(0, r.likes - 1),
                     }
                     : r
             )
         );
+
+        console.log("Reputação atualizada:", resultado.reputacaoAutor);
+
+    } catch (error) {
+        console.error("Erro ao curtir publicação:", error);
+        alert(error.message);
     }
+}
 
     return (
         <View style={{ flex: 1 }}>
