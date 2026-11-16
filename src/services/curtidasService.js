@@ -98,6 +98,10 @@ export async function alternarCurtidaRegistro(idRegistro) {
       });
 
     if (erroInsercao) {
+      if (erroInsercao.code === "23505") {
+        throw new Error("Você já confirmou esta publicação.");
+      }
+
       throw new Error(
         `Não foi possível adicionar a curtida: ${erroInsercao.message}`
       );

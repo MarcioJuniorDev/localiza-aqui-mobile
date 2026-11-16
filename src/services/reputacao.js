@@ -58,14 +58,14 @@ export function calcularReputacao(registros, curtidas, idUsuario) {
         // Exclui o próprio autor
         // Evita contar o mesmo usuário duas vezes
 
-       const usuariosQueConfirmaram = new Set(
-            curtidas
-                .filter((curtida) =>
-                    String(curtida.fkRegistro) === String(registro.idRegistro) &&
-                    String(curtida.fkUsuario) !== String(idUsuario)
-                )
-                .map((curtida) => String(curtida.fkUsuario))
-        );
+    const usuariosQueConfirmaram = new Set(
+        curtidas
+            .filter((curtida) =>
+                String(curtida.fkRegistro) === String(registro.idRegistro) &&
+                String(curtida.fkUsuario) !== String(idUsuario)
+            )
+        .map((curtida) => String(curtida.fkUsuario))
+    );
 
         const quantidade = usuariosQueConfirmaram.size;
 

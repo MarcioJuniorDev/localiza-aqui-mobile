@@ -21,6 +21,9 @@ export default function Home() {
             }
 
             const usuario = JSON.parse(usuarioSalvo);
+            if (!usuario?.idUsuario) {
+                return;
+            }
 
             const reputacao = await buscarReputacaoUsuario(
                 usuario.idUsuario

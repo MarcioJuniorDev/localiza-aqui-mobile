@@ -58,13 +58,14 @@ export default function Produto_pesquisado() {
                 console.error("Erro ao buscar curtidas:", erroCurtidas);
             } else {
                 curtidas.forEach((c) => {
-                    contagem[c.fkRegistro] = (contagem[c.fkRegistro] || 0) + 1;
-                    if (c.fkUsuario === idU) idsCurtidos.add(c.fkRegistro);
+                    const idRegistro = String(c.fkRegistro);
+                        contagem[idRegistro] = (contagem[idRegistro] || 0) + 1;
+                    if (String(c.fkUsuario) === String(idU)) {
+                        idsCurtidos.add(String(c.fkRegistro));
+                    }
                 });
             }
         }
-
-
 
         const registrosFormatados = data.map((registro) => {
             let mercado;
@@ -86,8 +87,8 @@ export default function Produto_pesquisado() {
             return {
                 ...registro,
                 mercado,
-                likes: contagem[registro.idRegistro] || 0,
-                curtido: idsCurtidos.has(registro.idRegistro),
+                likes: contagem[String(registro.idRegistro)] || 0,
+                curtido: idsCurtidos.has(String(registro.idRegistro)),
                 data: new Date(registro.criado_em).toLocaleDateString("pt-BR"),
             };
         });
@@ -258,31 +259,33 @@ export default function Produto_pesquisado() {
     }
 
     // curtidas
+    
     async function fnCurtir(idR) {
-    try {
-        const resultado = await alternarCurtidaRegistro(idR);
+        try {
+            const resultado = await alternarCurtidaRegistro(idR);
 
-        setRegistros((anteriores) =>
-            anteriores.map((r) =>
-                r.idRegistro === idR
-                    ? {
-                        ...r,
-                        curtido: resultado.curtido,
-                        likes: resultado.curtido
-                            ? r.likes + 1
-                            : Math.max(0, r.likes - 1),
-                    }
-                    : r
-            )
-        );
+            setRegistros((anteriores) =>
+                anteriores.map((r) =>
+                    String(r.idRegistro) === String(idR)
+                        ? {
+                            ...r,
+                            curtido: resultado.curtido,
+                            likes: resultado.curtido
+                                ? (r.likes || 0) + 1
+                                : Math.max(0, (r.likes || 0) - 1),
+                        }
+                        : r
+                )
+            );
 
-        console.log("Reputação atualizada:", resultado.reputacaoAutor);
+            console.log("Reputação atualizada:", resultado.reputacaoAutor);
 
-    } catch (error) {
-        console.error("Erro ao curtir publicação:", error);
-        alert(error.message);
+        } catch (error) {
+            console.error("Erro ao curtir publicação:", error);
+            alert(error.message);
+        }
     }
-}
+
 
     return (
         <View style={{ flex: 1 }}>
