@@ -7,21 +7,21 @@ import Svg, { G, Image, Path, Rect } from "react-native-svg";
 import { entrarComGoogle } from '../../lib/auth';
 import { supabase } from './../../lib/supabase';
 
-export default function Home() {
+export default function SignIn() {
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [cpf, setCpf] = useState("");
 
   const handleGoogleLogin = async () => {
-  try {
-    const user = await entrarComGoogle();
-    // Redireciona para a tela principal após o login
-    router.replace('/home');
-  } catch (error) {
-    Alert.alert('Erro no login', error.message || 'Não foi possível entrar com o Google.');
-  }
-};
+    try {
+      const user = await entrarComGoogle();
+      // Redireciona para a tela principal após o login
+      router.replace('/home');
+    } catch (error) {
+      Alert.alert('Erro no login', error.message || 'Não foi possível entrar com o Google.');
+    }
+  };
 
   // valida SÓ o formato, retorna true/false
   function fnCamposPreenchidos() {
@@ -232,8 +232,9 @@ export default function Home() {
         </G>
 
         {/* figura: fundo de "Continue com o Google" */}
-        <Rect width={313} height={46} x={198.867} y={1176.86} fill="#fff" rx={20} onPress={() => {handleGoogleLogin}} />
-
+        <Pressable width={313} height={46} x={198.867} y={1176.86} onPress={() => { handleGoogleLogin }}>
+          <Rect width={313} height={46} x={198.867} y={1176.86} fill="#fff" rx={20}/>
+        </Pressable>
         {/* figura: borda do texto "Continue com o Google" */}
         <Rect
           width={312}
