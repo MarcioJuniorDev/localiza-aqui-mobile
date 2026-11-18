@@ -108,7 +108,7 @@ export default function Home() {
             <Rect // a primeira caixa de texto (a do nome)
               width={411.266}
               height={44.792}
-              x={145.867}
+              x={'145.867'}
               y={541.857}
               fill="#DDA15E"
               fillOpacity={0.9}
