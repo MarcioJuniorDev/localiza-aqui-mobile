@@ -6,6 +6,7 @@ import { useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect } from "react";
 import { buscarReputacaoUsuario } from "../services/reputacao";
+import { buscarConquistasUsuario } from "../services/conquistas";
 
 export default function Home() {
     const [localizacao, setLocalizacao] = useState("");
@@ -30,6 +31,10 @@ export default function Home() {
             );
 
             setNivel(reputacao.rank);
+
+            const conquistas = await buscarConquistasUsuario(
+                usuario.idUsuario
+            );
 
         } catch (error) {
             console.error("Erro ao carregar reputação:", error);

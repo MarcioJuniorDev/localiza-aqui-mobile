@@ -4,6 +4,7 @@ import { BarraNavegacao } from "../components/barraNavegação";
 import { useState, useEffect } from "react";
 import { Picker } from "@react-native-picker/picker";
 import { supabase } from './../../lib/supabase';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Adicionar() {
     const [produto, setProduto] = useState("");
@@ -13,6 +14,22 @@ export default function Adicionar() {
 
     const [textoBusca, setTextoBusca] = useState("");
     const [produtos, setProdutos] = useState([]);
+
+    async function buscarUsuarioLogadoId() {
+    const usuarioSalvo = await AsyncStorage.getItem("@usuario");
+
+    if (!usuarioSalvo) {
+        throw new Error("Você precisa estar conectado.");
+    }
+
+    const usuario = JSON.parse(usuarioSalvo);
+
+    if (usuario?.idUsuario == null) {
+        throw new Error("Não foi possível identificar o usuário.");
+    }
+
+    return usuario.idUsuario;
+}
 
     // Busca produtos a partir do que o usuário digita
     async function buscarProdutos(texto) {
@@ -66,8 +83,6 @@ export default function Adicionar() {
         return data[0];
     }
 
-    const usuarioLogadoId = 1; // troque pelo id do usuário autenticado
-
     // carrega os mercados
     useEffect(() => {
         async function carregarMercados() {
@@ -113,6 +128,8 @@ export default function Adicionar() {
         }
 
         try {
+            const usuarioLogadoId = await buscarUsuarioLogadoId();
+
             const idProduto = await buscarOuCriarProduto(produto);
 
             await criarRegistro({
