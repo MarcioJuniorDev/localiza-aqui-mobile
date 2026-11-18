@@ -24,11 +24,7 @@
     "expo-status-bar": "~58.0.5",
     "expo-symbols": "~58.0.5",
     "expo-system-ui": "~58.0.7",
-<<<<<<< HEAD
     "expo-web-browser": "~58.1.0",
-=======
-    "expo-web-browser": "~58.0.7",
->>>>>>> parent of dde159f (a)
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native-gesture-handler": "~3.3.0",
