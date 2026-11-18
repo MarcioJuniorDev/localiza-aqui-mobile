@@ -108,7 +108,7 @@ export default function Home() {
             <Rect // a primeira caixa de texto (a do nome)
               width={411.266}
               height={44.792}
-              x={'145.867'}
+              x={145.867}
               y={541.857}
               fill="#DDA15E"
               fillOpacity={0.9}
@@ -486,7 +486,7 @@ export default function Home() {
           // equivalente a: x-50 (para o placeholder ficar à esqueda)
           left: '23%',
           // equivalente a: y
-          top: '51%',
+          top: '50%',
           // equivalente a: width
           width: 411.266,
           // equivalente a: height
@@ -517,7 +517,7 @@ export default function Home() {
           // equivalente a: x-50 (para o placeholder ficar à esqueda)
           left: '23%',
           // equivalente a: y
-          top: '56%',
+          top: '55%',
           // equivalente a: width
           width: 411.266,
           // equivalente a: height
@@ -542,21 +542,15 @@ export default function Home() {
         }}
       />
 
-      
-
-      
-
-      
-
       {/* "apertável" para escolher imagem */}
       <Pressable
         onPress={escolherImagem}
         style={{
           position: "absolute",
           left: 150,
-          top: 535,
+          top: 475,
           width: 100,
-          height: 100
+          height: 100,
         }}
       />
     </View>
