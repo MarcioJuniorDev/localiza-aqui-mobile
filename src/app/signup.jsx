@@ -200,7 +200,7 @@ export default function Home() {
             />
           </G>
 
-         
+
           <Path // aqui está o texto "já tem uma conta?"
             fill="#001427"
             d="M235.781 1416.1v11.93c0 3.22-2.207 4.83-6.621 4.83v-2.7c2.344 0 3.516-.71 3.516-2.13v-11.93h3.105Zm2.637 12.93c0-2.45 1.781-3.67 5.344-3.67.836 0 1.672.08 2.508.23v-.92c0-1.11-.793-1.66-2.379-1.66-1.344 0-2.836.2-4.477.59v-2.46c1.641-.39 3.133-.59 4.477-.59 3.656 0 5.484 1.35 5.484 4.06v8.25h-1.805l-1.101-1.1a6.152 6.152 0 0 1-3.539 1.1c-3.008 0-4.512-1.28-4.512-3.83Zm7.852-1.33c-.782-.16-1.618-.23-2.508-.23-1.492 0-2.239.5-2.239 1.52 0 1.09.625 1.64 1.875 1.64 1.032 0 1.989-.32 2.872-.96v-1.97Zm-2.379-11.6h3.738l-2.801 3.03h-2.625l1.688-3.03Zm13.523 2.46h2.297l.469 1.99h3.093v2.46h-2.753v5.66c0 1.15.496 1.73 1.488 1.73h1.265v2.46h-2.765c-2.063 0-3.094-1.11-3.094-3.32v-10.98Zm13.172 1.99c3.734 0 5.601 1.91 5.601 5.72 0 .51-.035 1.02-.105 1.52h-8.168c0 1.74 1.273 2.61 3.82 2.61a19.6 19.6 0 0 0 3.727-.36v2.47c-1.086.23-2.406.35-3.961.35-4.461 0-6.691-2.1-6.691-6.3 0-4 1.925-6.01 5.777-6.01Zm-2.672 5.09h5.25v-.1c0-1.7-.859-2.55-2.578-2.55-1.641 0-2.531.88-2.672 2.65Zm10.606 7.22v-12.31h2.402l.363 1.78c1.102-1.18 2.426-1.78 3.973-1.78 1.547 0 2.605.56 3.176 1.69 1.257-1.13 2.574-1.69 3.949-1.69 2.828 0 4.242 1.56 4.242 4.68v7.63h-3.105v-7.75c0-1.37-.618-2.05-1.852-2.05-.922 0-1.809.41-2.66 1.24v8.56h-3.106v-7.71c0-1.39-.57-2.09-1.711-2.09-.906 0-1.761.41-2.566 1.24v8.56h-3.105Zm37.394-12.31v12.31h-2.426l-.375-1.57c-1.414 1.04-2.914 1.57-4.5 1.57-2.515 0-3.773-1.49-3.773-4.47v-7.84h3.105v7.76c0 1.36.594 2.04 1.782 2.04 1.007 0 2.035-.4 3.082-1.21v-8.59h3.105Zm2.941 12.31v-12.31h2.403l.363 1.78c1.102-1.18 2.426-1.78 3.973-1.78 1.547 0 2.605.56 3.176 1.69 1.257-1.13 2.574-1.69 3.949-1.69 2.828 0 4.242 1.56 4.242 4.68v7.63h-3.106v-7.75c0-1.37-.617-2.05-1.851-2.05-.922 0-1.809.41-2.66 1.24v8.56h-3.106v-7.71c0-1.39-.57-2.09-1.711-2.09-.906 0-1.761.41-2.566 1.24v8.56h-3.106Zm20.461-3.83c0-2.45 1.782-3.67 5.344-3.67.836 0 1.672.08 2.508.23v-.92c0-1.11-.793-1.66-2.379-1.66-1.344 0-2.836.2-4.477.59v-2.46c1.641-.39 3.133-.59 4.477-.59 3.656 0 5.484 1.35 5.484 4.06v8.25h-1.804l-1.102-1.1a6.15 6.15 0 0 1-3.539 1.1c-3.008 0-4.512-1.28-4.512-3.83Zm7.852-1.33c-.781-.16-1.617-.23-2.508-.23-1.492 0-2.238.5-2.238 1.52 0 1.09.625 1.64 1.875 1.64 1.031 0 1.988-.32 2.871-.96v-1.97Zm20.402 4.81c-1.015.23-2.07.35-3.164.35-4.375 0-6.562-2.13-6.562-6.39 0-3.94 2.187-5.92 6.562-5.92 1.094 0 2.149.12 3.164.35v2.46a13.269 13.269 0 0 0-2.929-.35c-2.461 0-3.692 1.16-3.692 3.46 0 2.62 1.231 3.93 3.692 3.93.937 0 1.914-.12 2.929-.36v2.47Zm4.571-5.85c0 2.57.996 3.85 2.988 3.85s2.988-1.28 2.988-3.85c0-2.51-.996-3.76-2.988-3.76s-2.988 1.25-2.988 3.76Zm-3.106.04c0-4.12 2.031-6.18 6.094-6.18 4.062 0 6.094 2.06 6.094 6.18 0 4.12-2.032 6.18-6.094 6.18-4.047 0-6.078-2.06-6.094-6.18Zm14.531 6.16v-12.31h2.403l.386 1.81c1.18-1.21 2.524-1.81 4.032-1.81 2.914 0 4.371 1.52 4.371 4.55v7.76h-3.106v-7.76c0-1.36-.675-2.04-2.027-2.04-1.008 0-1.992.4-2.953 1.21v8.59h-3.106Zm13.957-14.3h2.297l.469 1.99h3.094v2.46h-2.754v5.66c0 1.15.496 1.73 1.488 1.73h1.266v2.46h-2.766c-2.062 0-3.094-1.11-3.094-3.32v-10.98Zm7.395 10.47c0-2.45 1.781-3.67 5.344-3.67.836 0 1.672.08 2.508.23v-.92c0-1.11-.793-1.66-2.379-1.66-1.344 0-2.836.2-4.477.59v-2.46c1.641-.39 3.133-.59 4.477-.59 3.656 0 5.484 1.35 5.484 4.06v8.25h-1.805l-1.101-1.1a6.152 6.152 0 0 1-3.539 1.1c-3.008 0-4.512-1.28-4.512-3.83Zm7.852-1.33c-.782-.16-1.618-.23-2.508-.23-1.492 0-2.239.5-2.239 1.52 0 1.09.625 1.64 1.875 1.64 1.032 0 1.989-.32 2.872-.96v-1.97Zm10.617 2.29v2.87h-3.106v-2.87h3.106Zm-4.864-13.3c1.641-.4 3.204-.59 4.688-.59 4.023 0 6.035 1.52 6.035 4.57 0 3.44-1.953 5.16-5.859 5.16v2.69h-3.106v-5.16h3.106c1.992 0 2.988-.89 2.988-2.69 0-1.41-1.055-2.11-3.164-2.11-1.484 0-3.047.2-4.688.59v-2.46Z"
@@ -415,12 +415,12 @@ export default function Home() {
             rx={8}
           />
         </G>
-       
+
       </Svg>
 
       {/* INPUTS */}
 
-       {/*nome*/}
+      {/*nome*/}
       <TextInput
         style={{
           position: "absolute",
@@ -437,9 +437,9 @@ export default function Home() {
           fontStyle: 'italic',
           color: 'white'
         }}
-        value={nomeUsuario} onChangeText={setNomeUsuario} placeholder="Nome" placeholderTextColor="#fff" 
+        value={nomeUsuario} onChangeText={setNomeUsuario} placeholder="Nome" placeholderTextColor="#fff"
       />
-     
+
 
       {/* CPF */}
       <TextInput
@@ -457,7 +457,7 @@ export default function Home() {
           fontSize: 17,
           color: '#fff'
         }}
-        value={cpf} onChangeText={setCpf} placeholder="CPF" placeholderTextColor="#fff" 
+        value={cpf} onChangeText={setCpf} placeholder="CPF" placeholderTextColor="#fff"
       />
 
       {/* email */}
@@ -476,7 +476,7 @@ export default function Home() {
           fontSize: 17,
           color: '#fff'
         }}
-        value={email} onChangeText={setEmail} placeholder="Email" placeholderTextColor="#fff" 
+        value={email} onChangeText={setEmail} placeholder="Email" placeholderTextColor="#fff"
       />
 
       {/* senha */}
@@ -495,7 +495,7 @@ export default function Home() {
           fontSize: 17,
           color: '#fff'
         }}
-        value={senha} onChangeText={setSenha} placeholder="Senha" secureTextEntry={!mostrar_senha} placeholderTextColor="#fff" 
+        value={senha} onChangeText={setSenha} placeholder="Senha" secureTextEntry={!mostrar_senha} placeholderTextColor="#fff"
       />
       {/* icone para mostrar/esconder senha */}
       <MaterialCommunityIcons
@@ -526,7 +526,7 @@ export default function Home() {
           fontSize: 17,
           color: '#fff'
         }}
-        value={confirmar_senha} onChangeText={setConfirmar_senha} placeholder="Confirmar senha" secureTextEntry={!mostrar_confirmar_senha} placeholderTextColor="#fff" 
+        value={confirmar_senha} onChangeText={setConfirmar_senha} placeholder="Confirmar senha" secureTextEntry={!mostrar_confirmar_senha} placeholderTextColor="#fff"
       />
 
       {/* icone para mostrar/esconder confirmar senha */}
@@ -542,21 +542,15 @@ export default function Home() {
         }}
       />
 
-      
-
-      
-
-      
-
       {/* "apertável" para escolher imagem */}
       <Pressable
         onPress={escolherImagem}
         style={{
           position: "absolute",
-          left: 150,
-          top: 535,
-          width: 100,
-          height: 100
+          left: '10%',
+          top: '60%',
+          width: '70%',
+          height: '8%',
         }}
       />
     </View>

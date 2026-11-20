@@ -331,8 +331,6 @@ export default function Home() {
           top: 445,
         }}
       />
-
-
     </View >
   );
 }
