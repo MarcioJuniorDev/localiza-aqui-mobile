@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { View, Text, ActivityIndicator } from "react-native";
 import * as Location from "expo-location";
-import Svg, { Path, Rect, Image, G } from "react-native-svg"
-import { BarraNavegacao } from "../components/barraNavegação";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Text, View } from "react-native";
+import Svg, { G, Image, Path, Rect } from "react-native-svg";
+import { BarraNavegacao } from "../components/barraNavegação";
 
 export default function Mercados() {
 
@@ -287,9 +287,6 @@ export default function Mercados() {
                     rx={7.5}
                     shapeRendering="crispEdges"
                 />
-
-                {/* figura: barra de navegação */}
-                <Rect width={735} height={85} x={-18} y={1436} fill="#606C38" rx={20} />
 
                 {/* texto: "Localiza Aqui" */}
                 <Path

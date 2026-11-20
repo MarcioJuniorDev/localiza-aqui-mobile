@@ -340,9 +340,6 @@ export default function Produto_pesquisado() {
                     shapeRendering="crispEdges"
                 />
 
-                {/* figura: fundo da barra de navegação */}
-                <Rect width={735} height={85} x={-12} y={1439} fill="#606C38" rx={20} />
-
                 {/* icone pesquisa */}
                 <Image
                     x={69}

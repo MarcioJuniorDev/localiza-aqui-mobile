@@ -1,7 +1,7 @@
+import { useEffect, useState } from 'react';
 import { View } from "react-native";
-import Svg, { G, Path, Rect, Ellipse, Image, Circle, Pattern, Use, LinearGradient, Stop, Defs, ClipPath } from "react-native-svg"
+import Svg, { ClipPath, Defs, Ellipse, Image, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { BarraNavegacao } from "../components/barraNavegação";
-import { useState, useEffect } from 'react';
 
 export default function Home() {
 
@@ -258,16 +258,6 @@ export default function Home() {
                 <Path
                     fill="#FF383C"
                     d="M66.93 810v-14.191h-1.758v-1.278l4.863-1.64V810H66.93Zm7.207-16.758h10.007v2.461H76.81l-.282 4.125c.446-.172 1.094-.258 1.946-.258 4.218 0 6.328 1.719 6.328 5.157 0 3.593-2.188 5.39-6.563 5.39-1.562 0-3.125-.234-4.687-.703v-2.578a14.44 14.44 0 0 0 4.805.82c2.226 0 3.34-.976 3.34-2.929 0-1.797-1.075-2.696-3.223-2.696-1.758 0-3.399.196-4.922.586l.586-9.375Z"
-                />
-
-                {/* figura: listra verde da navegação */}
-                <Rect
-                    width={735}
-                    height={85}
-                    x={-15}
-                    y={1434}
-                    fill="#606C38"
-                    rx={20}
                 />
             </Svg>
             <BarraNavegacao />
