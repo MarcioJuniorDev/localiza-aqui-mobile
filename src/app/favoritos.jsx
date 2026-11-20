@@ -76,9 +76,6 @@ export default function Favoritos() {
                 {/* figura: fundo */}
                 <Path fill="#FEFAE0" d="M0 1.718 699.998 0l3.736 1521.995-699.998 1.719z" />
 
-                {/* figura: listra da barra de navegação */}
-                <Rect width={735} height={85} x={-13} y={1434} fill="#606C38" rx={20} />
-
                 {/* texto: "Localiza Aqui" */}
                 <Path
                     fill="#001427"
