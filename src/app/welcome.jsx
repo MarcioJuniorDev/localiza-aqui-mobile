@@ -191,7 +191,7 @@ export default function Home() {
                     y={1177}
                     width={40}
                     height={40}
-                    href={require("../assets/img/google-icone.jpg")}
+                    href={require("../assets/img/google-icone.png")}
                     clipPath="url(#googleClip)"
                 />
             </Svg>

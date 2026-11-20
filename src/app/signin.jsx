@@ -262,7 +262,7 @@ export default function Home() {
           y={1171}
           width={58}
           height={58}
-          href={require("../assets/img/google-icone.jpg")}
+          href={require("../assets/img/google-icone.png")}
         />
       </Svg>
 
@@ -331,8 +331,6 @@ export default function Home() {
           top: 445,
         }}
       />
-
-
     </View >
   );
 }
