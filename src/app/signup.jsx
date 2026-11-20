@@ -15,7 +15,7 @@ import Svg, {
   Use,
 } from "react-native-svg";
 
-export default function SignUp() {
+export default function Home() {
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [email, setEmail] = useState("");
