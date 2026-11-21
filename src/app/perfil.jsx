@@ -286,6 +286,7 @@ export default function Home() {
             {/* barra de XP dinâmica */}
 
             {/* nível */}
+            <Text style={{position: 'absolute', top: '47.5%', left: '19.5%', fontSize: 16}}>{nivel}</Text>
 
             {/* XP */}
 
