@@ -3,6 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from 'react';
 import { Alert, Pressable, TextInput, View } from "react-native";
+import { supabase } from './../../lib/supabase';
 import Svg, {
   ClipPath,
   Defs,
@@ -14,6 +15,9 @@ import Svg, {
   Rect,
   Use,
 } from "react-native-svg";
+import { hashSenha } from '../lib/hash';
+import { File } from 'expo-file-system';
+import { decode as base64ToArrayBuffer } from 'base64-arraybuffer';
 
 export default function Home() {
   const [nome, setNome] = useState("");
@@ -21,7 +25,6 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmar_senha, setConfirmar_senha] = useState("");
-  const [nomeUsuario, setNomeUsuario] = useState("");
 
   const [mostrar_senha, setMostrar_senha] = useState(false);
   const [mostrar_confirmar_senha, setMostrar_confirmar_senha] = useState(false);
@@ -87,6 +90,104 @@ export default function Home() {
       else {
         router.push("/home");
       }
+    }
+  }
+
+  async function adicionarUsuario({
+    nome,
+    cpf,
+    email,
+    senha,
+    confirmar_senha,
+    imagemUri = null,
+  }) {
+    if (senha !== confirmar_senha) {
+      throw new Error('As senhas não coincidem.');
+    }
+
+    // 🔐 hash da senha
+    const senhaHash = await hashSenha(senha);
+
+    // 📤 upload da imagem (se houver)
+    let foto_url = null;
+
+    if (imagemUri) {
+      try {
+        const ext = imagemUri.split('.').pop()?.split('?')[0]?.toLowerCase() || 'jpg';
+        const contentType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+        const nomeArq = `${cpf.replace(/\D/g, '') || Date.now()}_${Date.now()}.${ext}`;
+
+        // 🔹 nova API: File + bytes()
+        const file = new File(imagemUri);
+        const bytes = await file.bytes();   // Uint8Array
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatares')
+          .upload(nomeArq, bytes, {
+            contentType,
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error('Erro no upload da imagem:', uploadError.message);
+        } else {
+          const { data: urlData } = supabase.storage
+            .from('avatares')
+            .getPublicUrl(nomeArq);
+          foto_url = urlData.publicUrl;
+          console.log('Foto enviada:', foto_url);
+        }
+      } catch (e) {
+        console.error('Erro ao processar imagem:', e.message);
+      }
+    }
+
+    // 💾 insert
+    const { data, error } = await supabase
+      .from('usuarios')
+      .insert([
+        {
+          nome,
+          CPF: cpf.replace(/\D/g, ''),
+          email: email.trim().toLowerCase(),
+          senha: senhaHash,
+          foto_url,
+          atualizado_em: new Date().toISOString(),
+        },
+      ])
+      .select();
+
+    if (error) {
+      console.error('Erro ao criar usuário:', error.message);
+      throw error;
+    }
+    return data[0];
+  }
+
+  async function handleCadastrar() {
+    if (email.trim() === "" || senha.trim() === "" || nome.trim() === "") {
+      return Alert.alert("Preencha os campos", "Nome, email ou senha não informados.");
+    }
+    if (confirmar_senha !== senha) {
+      return Alert.alert("Senhas diferentes", "Sua senha e confirmação estão diferentes.");
+    }
+    if (senha.trim().length < 8 || !/[0-9]/.test(senha) || !/[^A-Za-z0-9]/.test(senha)) {
+      return Alert.alert("Senha inválida", "Mínimo 8 caracteres, um número e um caractere especial.");
+    }
+
+    try {
+      const usuario = await adicionarUsuario({
+        nome: nome,
+        cpf,
+        email,
+        senha,
+        confirmar_senha,
+        imagemUri: imagem?.uri ?? null,
+      });
+      console.log('Criado:', usuario);
+      router.push("/home");
+    } catch (err) {
+      Alert.alert("Erro", err.message);
     }
   }
 
@@ -223,6 +324,8 @@ export default function Home() {
               fillOpacity={0.9}
               rx={23.5}
               shapeRendering="crispEdges"
+              onPress={() => handleCadastrar()
+              }
             />
           </G>
           <G filter="url(#f)">
@@ -311,14 +414,26 @@ export default function Home() {
             />
           </G>
 
-          {/* figura: icone de imagem padrão para adicionar foto */}
-          <Image
-            x={155.367}
-            y={970.357}
-            width={55}
-            height={55}
-            href={require("../assets/img/foto-padrao.png")}
-          />
+          {/* figura: icone de imagem para adicionar foto */}
+          {imagem?.uri ? (
+            <Image
+              x={155.367}
+              y={970.357}
+              width={55}
+              height={55}
+              href={{ uri: imagem.uri }}
+              preserveAspectRatio="xMidYMid slice"
+            />
+          ) : (
+            <Image
+              x={155.367}
+              y={970.357}
+              width={55}
+              height={55}
+              href={require("../assets/img/foto-padrao.png")}
+            />
+          )}
+
           <Path // aqui está o texto "adicionar foto de perfil(opcional)"
             fill="#fff"
             d="M222.058 1003.86h-2.922l6.52-15.364h3.062l6.66 15.364h-3.062l-1.751-4.193h-5.102l.977-2.47h3.094l-2.417-5.769-5.059 12.432Zm22.075-8.339c-.587-.387-1.325-.58-2.213-.58-1.769 0-2.653.992-2.653 2.975 0 2.354.92 3.534 2.76 3.534.745 0 1.447-.1 2.106-.31v-5.619Zm2.846 7.659c-1.725.45-3.412.68-5.059.68-3.645 0-5.468-1.96-5.468-5.868 0-3.61 1.783-5.414 5.35-5.414.759 0 1.536.179 2.331.537v-4.619h2.846v14.684Zm5.533-14.684v2.255h-2.847v-2.255h2.847Zm0 4.082v11.282h-2.847v-11.282h2.847Zm11.021 10.952c-.931.22-1.898.33-2.9.33-4.011 0-6.016-1.95-6.016-5.858 0-3.616 2.005-5.424 6.016-5.424 1.002 0 1.969.107 2.9.322v2.256a11.93 11.93 0 0 0-2.685-.323c-2.256 0-3.384 1.057-3.384 3.169 0 2.398 1.128 3.598 3.384 3.598.859 0 1.754-.11 2.685-.32v2.25Zm4.727-15.034v2.255h-2.847v-2.255h2.847Zm0 4.082v11.282h-2.847v-11.282h2.847Zm5.006 5.596c0 2.356.913 3.536 2.739 3.536 1.826 0 2.739-1.18 2.739-3.536 0-2.299-.913-3.448-2.739-3.448-1.826 0-2.739 1.149-2.739 3.448Zm-2.847.043c0-3.781 1.862-5.672 5.586-5.672s5.586 1.891 5.586 5.672c0 3.773-1.862 5.663-5.586 5.663-3.71 0-5.572-1.89-5.586-5.663Zm13.32 5.643v-11.282h2.202l.355 1.654c1.081-1.103 2.313-1.654 3.695-1.654 2.671 0 4.007 1.389 4.007 4.168v7.114h-2.847v-7.114c0-1.247-.619-1.87-1.858-1.87-.924 0-1.826.369-2.707 1.107v7.877h-2.847Zm12.418-3.52c0-2.237 1.633-3.358 4.899-3.358.766 0 1.532.071 2.298.215v-.849c0-1.01-.726-1.515-2.18-1.515-1.232 0-2.6.179-4.104.538v-2.256c1.504-.358 2.872-.537 4.104-.537 3.351 0 5.027 1.238 5.027 3.716v7.566h-1.654l-1.01-1.01a5.632 5.632 0 0 1-3.244 1.01c-2.757 0-4.136-1.17-4.136-3.52Zm7.197-1.21a11.725 11.725 0 0 0-2.298-.215c-1.368 0-2.052.466-2.052 1.395 0 1 .573 1.51 1.719 1.51.945 0 1.822-.3 2.631-.89v-1.8Zm5.543 4.73v-11.282h2.203l.354 1.439c.988-.96 2.034-1.439 3.137-1.439v2.298c-1.06 0-2.009.441-2.847 1.322v7.662h-2.847Zm12.139 0v-11.282c0-3.094 1.69-4.641 5.07-4.641.924 0 1.762.143 2.514.43v2.255a6.116 6.116 0 0 0-2.309-.429c-1.619 0-2.428.795-2.428 2.385h3.384v2.255h-3.384v9.027h-2.847Zm10.28-5.686c0 2.356.913 3.536 2.74 3.536 1.826 0 2.739-1.18 2.739-3.536 0-2.299-.913-3.448-2.739-3.448-1.827 0-2.74 1.149-2.74 3.448Zm-2.846.043c0-3.781 1.862-5.672 5.586-5.672s5.586 1.891 5.586 5.672c0 3.773-1.862 5.663-5.586 5.663-3.71 0-5.572-1.89-5.586-5.663Zm13.159-7.466h2.105l.43 1.827H347v2.255h-2.524v5.187c0 1.05.454 1.58 1.364 1.58H347v2.26h-2.535c-1.891 0-2.836-1.02-2.836-3.04v-10.069Zm9.625 7.423c0 2.356.913 3.536 2.739 3.536 1.826 0 2.739-1.18 2.739-3.536 0-2.299-.913-3.448-2.739-3.448-1.826 0-2.739 1.149-2.739 3.448Zm-2.847.043c0-3.781 1.862-5.672 5.586-5.672s5.586 1.891 5.586 5.672c0 3.773-1.862 5.663-5.586 5.663-3.709 0-5.571-1.89-5.586-5.663Zm25.298-2.696c-.587-.387-1.325-.58-2.213-.58-1.769 0-2.653.992-2.653 2.975 0 2.354.92 3.534 2.761 3.534.744 0 1.446-.1 2.105-.31v-5.619Zm2.847 7.659c-1.726.45-3.413.68-5.06.68-3.645 0-5.468-1.96-5.468-5.868 0-3.61 1.784-5.414 5.35-5.414.759 0 1.536.179 2.331.537v-4.619h2.847v14.684Zm7.444-10.602c3.423 0 5.135 1.747 5.135 5.242 0 .465-.032.931-.097 1.396h-7.487c0 1.594 1.167 2.384 3.502 2.384 1.138 0 2.277-.11 3.416-.32v2.25c-.996.22-2.206.33-3.631.33-4.089 0-6.134-1.93-6.134-5.772 0-3.674 1.765-5.51 5.296-5.51Zm-2.449 4.662h4.812v-.086c0-1.561-.787-2.342-2.363-2.342-1.504 0-2.32.809-2.449 2.428Zm17.402 3.67c.709.39 1.472.58 2.288.58 1.698 0 2.546-1.19 2.546-3.574 0-2.026-.938-3.04-2.814-3.04-.809 0-1.483.05-2.02.151v5.883Zm-2.846-7.871a23.585 23.585 0 0 1 4.748-.461c3.831 0 5.747 1.786 5.747 5.36 0 3.942-1.784 5.922-5.35 5.922-.759 0-1.525-.18-2.299-.54v4.62h-2.846v-14.901Zm17.413-.461c3.423 0 5.134 1.747 5.134 5.242 0 .465-.032.931-.096 1.396h-7.488c0 1.594 1.168 2.384 3.502 2.384 1.139 0 2.278-.11 3.416-.32v2.25c-.995.22-2.205.33-3.63.33-4.09 0-6.134-1.93-6.134-5.772 0-3.674 1.765-5.51 5.296-5.51Zm-2.45 4.662h4.813v-.086c0-1.561-.788-2.342-2.363-2.342-1.504 0-2.321.809-2.45 2.428Zm9.722 6.62v-11.282h2.202l.355 1.439c.988-.96 2.034-1.439 3.136-1.439v2.298c-1.059 0-2.008.441-2.846 1.322v7.662h-2.847Zm17.091-11.282v11.282h-2.847v-9.027h-4.093v9.027h-2.846v-11.83c0-2.872 1.69-4.308 5.07-4.308 1.21 0 2.424.251 3.642.752v2.256a8.225 8.225 0 0 0-3.438-.752c-1.618 0-2.428.655-2.428 1.966v.634h6.94Zm5.543-4.082v15.364h-2.847v-15.364h2.847Zm12.257 0c-1.433 3.236-2.149 6.477-2.149 9.721 0 3.243.716 6.483 2.149 9.723h-2.847c-1.432-3.24-2.148-6.48-2.148-9.723 0-3.244.716-6.485 2.148-9.721h2.847Zm4.458 9.678c0 2.356.913 3.536 2.739 3.536 1.826 0 2.739-1.18 2.739-3.536 0-2.299-.913-3.448-2.739-3.448-1.826 0-2.739 1.149-2.739 3.448Zm-2.847.043c0-3.781 1.862-5.672 5.586-5.672s5.586 1.891 5.586 5.672c0 3.773-1.862 5.663-5.586 5.663-3.71 0-5.572-1.89-5.586-5.663Zm16.167 2.693c.709.39 1.472.58 2.288.58 1.697 0 2.546-1.19 2.546-3.574 0-2.026-.938-3.04-2.814-3.04-.81 0-1.483.05-2.02.151v5.883Zm-2.847-7.871a23.6 23.6 0 0 1 4.748-.461c3.832 0 5.747 1.786 5.747 5.36 0 3.942-1.783 5.922-5.349 5.922-.759 0-1.526-.18-2.299-.54v4.62h-2.847v-14.901Zm20.98 10.491c-.931.22-1.898.33-2.901.33-4.01 0-6.015-1.95-6.015-5.858 0-3.616 2.005-5.424 6.015-5.424 1.003 0 1.97.107 2.901.322v2.256a11.932 11.932 0 0 0-2.686-.323c-2.256 0-3.383 1.057-3.383 3.169 0 2.398 1.127 3.598 3.383 3.598.86 0 1.755-.11 2.686-.32v2.25Zm4.726-15.034v2.255h-2.846v-2.255h2.846Zm0 4.082v11.282h-2.846v-11.282h2.846Zm5.006 5.596c0 2.356.913 3.536 2.74 3.536 1.826 0 2.739-1.18 2.739-3.536 0-2.299-.913-3.448-2.739-3.448-1.827 0-2.74 1.149-2.74 3.448Zm-2.846.043c0-3.781 1.862-5.672 5.586-5.672 3.723 0 5.585 1.891 5.585 5.672 0 3.773-1.862 5.663-5.585 5.663-3.71 0-5.572-1.89-5.586-5.663Zm13.32 5.643v-11.282h2.202l.355 1.654c1.081-1.103 2.313-1.654 3.695-1.654 2.671 0 4.007 1.389 4.007 4.168v7.114h-2.847v-7.114c0-1.247-.619-1.87-1.858-1.87-.924 0-1.827.369-2.707 1.107v7.877h-2.847Zm12.418-3.52c0-2.237 1.633-3.358 4.898-3.358.767 0 1.533.071 2.299.215v-.849c0-1.01-.727-1.515-2.181-1.515-1.231 0-2.599.179-4.103.538v-2.256c1.504-.358 2.872-.537 4.103-.537 3.352 0 5.028 1.238 5.028 3.716v7.566h-1.654l-1.01-1.01a5.635 5.635 0 0 1-3.244 1.01c-2.758 0-4.136-1.17-4.136-3.52Zm7.197-1.21a11.728 11.728 0 0 0-2.299-.215c-1.368 0-2.051.466-2.051 1.395 0 1 .572 1.51 1.718 1.51.946 0 1.823-.3 2.632-.89v-1.8Zm8.39-10.634v15.364h-2.847v-15.364h2.847Zm5.006 0c1.432 3.236 2.148 6.477 2.148 9.721 0 3.243-.716 6.483-2.148 9.723h-2.847c1.432-3.24 2.148-6.48 2.148-9.723 0-3.244-.716-6.485-2.148-9.721h2.847Z"
@@ -440,7 +555,7 @@ export default function Home() {
           fontStyle: 'italic',
           color: 'white'
         }}
-        value={nomeUsuario} onChangeText={setNomeUsuario} placeholder="Nome" placeholderTextColor="#fff"
+        value={nome} onChangeText={setNome} placeholder="Nome" placeholderTextColor="#fff"
       />
 
 
