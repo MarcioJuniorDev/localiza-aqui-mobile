@@ -4,11 +4,12 @@
     "slug": "tcc",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "src/assets/img/logo-localiza-aqui.png",
+    "icon": "./assets/images/logo-localiza-aqui.png",
     "scheme": "tcc",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/ios-icon.png",
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
@@ -35,7 +36,12 @@
       ],
       "expo-image",
       "expo-web-browser",
-      "expo-status-bar"
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permita que o $(PRODUCT_NAME) use sua localização para mostrar lugares próximos."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
