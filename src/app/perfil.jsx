@@ -24,6 +24,8 @@ import { buscarConquistasUsuario } from "../services/conquistas";
 export default function Home() {
     const [localizacao, setLocalizacao] = useState("");
     const [nivel, setNivel] = useState("Bronze");
+    const [nome, setNome] = useState("");
+    const [email, setEmail] = useState("");
 
     useEffect(() => {
         async function carregarReputacao() {
@@ -57,6 +59,8 @@ export default function Home() {
         }
 
         carregarReputacao();
+        fnLerNomeUsuarioLocalmente();
+        fnLerEmailUsuarioLocalmente();
     }, []);
 
     function fnSair() {
@@ -97,6 +101,35 @@ export default function Home() {
                 },
             ]
         );
+    }
+
+    // carregamento dos dados salvos localmente
+    const CHAVE_USUARIO = '@usuario';
+
+    async function fnLerNomeUsuarioLocalmente() {
+        try {
+            const json = await AsyncStorage.getItem(CHAVE_USUARIO);
+            if (json == null) return null;
+
+            const usuario = JSON.parse(json);
+            setNome(usuario.nome);
+        } catch (e) {
+            console.error('Erro ao ler usuário:', e);
+            return null;
+        }
+    }
+
+    async function fnLerEmailUsuarioLocalmente() {
+        try {
+            const json = await AsyncStorage.getItem(CHAVE_USUARIO);
+            if (json == null) return null;
+
+            const usuario = JSON.parse(json);
+            setEmail(usuario.email);
+        } catch (e) {
+            console.error('Erro ao ler usuário:', e);
+            return null;
+        }
     }
 
     return (
@@ -245,8 +278,10 @@ export default function Home() {
             >Parabéns nível {nivel}</Text> */}
 
             {/* nome de usuário */}
+            <Text style={{position: 'absolute', top: '22%', left: '7%', fontSize: 20}}>{nome}</Text>
 
             {/* email do usuário */}
+            <Text style={{position: 'absolute', top: '24.5%', left: '7%', fontSize: 14}}>{email}</Text>
 
             {/* barra de XP dinâmica */}
 
