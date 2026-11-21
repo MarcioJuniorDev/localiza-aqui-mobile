@@ -3,6 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from 'react';
 import { Alert, Pressable, TextInput, View } from "react-native";
+import { supabase } from './../../lib/supabase';
 import Svg, {
   ClipPath,
   Defs,
@@ -21,7 +22,6 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmar_senha, setConfirmar_senha] = useState("");
-  const [nomeUsuario, setNomeUsuario] = useState("");
 
   const [mostrar_senha, setMostrar_senha] = useState(false);
   const [mostrar_confirmar_senha, setMostrar_confirmar_senha] = useState(false);
@@ -87,6 +87,89 @@ export default function Home() {
       else {
         router.push("/home");
       }
+    }
+  }
+
+  async function adicionarUsuario({
+    nome,
+    cpf,
+    email,
+    senha,
+    confirmar_senha,
+    imagemUri = null,
+  }) {
+    if (senha !== confirmar_senha) {
+      throw new Error('As senhas não coincidem.');
+    }
+
+    let foto_url = null;
+    if (imagemUri) {
+      const ext = imagemUri.split('.').pop()?.split('?')[0] || 'jpg';
+      const nomeArq = `${cpf.replace(/\D/g, '')}_${Date.now()}.${ext}`;
+      const buffer = await (await fetch(imagemUri)).arrayBuffer();
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatares')
+        .upload(nomeArq, buffer, {
+          contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+        });
+
+      if (uploadError) {
+        console.warn('Erro no upload da imagem:', uploadError.message);
+      } else {
+        const { data: urlData } = supabase.storage
+          .from('avatares')
+          .getPublicUrl(nomeArq);
+        foto_url = urlData.publicUrl;
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('usuarios')
+      .insert([
+        {
+          nome,
+          CPF: cpf.replace(/\D/g, ''),   // 👈 MAIÚSCULO, aspas no banco
+          email: email.trim().toLowerCase(),
+          senha,
+          foto_url,                       // 👈 em vez de imagem_url
+          atualizado_em: new Date().toISOString(),
+          // criado_em NÃO EXISTE — omitir
+        },
+      ])
+      .select();
+
+    if (error) {
+      console.error('Erro ao criar usuário:', error.message);
+      throw error;
+    }
+    return data[0];
+  }
+
+  async function handleCadastrar() {
+    if (email.trim() === "" || senha.trim() === "" || nome.trim() === "") {
+      return Alert.alert("Preencha os campos", "Nome, email ou senha não informados.");
+    }
+    if (confirmar_senha !== senha) {
+      return Alert.alert("Senhas diferentes", "Sua senha e confirmação estão diferentes.");
+    }
+    if (senha.trim().length < 8 || !/[0-9]/.test(senha) || !/[^A-Za-z0-9]/.test(senha)) {
+      return Alert.alert("Senha inválida", "Mínimo 8 caracteres, um número e um caractere especial.");
+    }
+
+    try {
+      const usuario = await adicionarUsuario({
+        nome: nome,
+        cpf,
+        email,
+        senha,
+        confirmar_senha,
+        imagemUri: imagem?.uri ?? null,
+      });
+      console.log('Criado:', usuario);
+      router.push("/home");
+    } catch (err) {
+      Alert.alert("Erro", err.message);
     }
   }
 
@@ -223,6 +306,8 @@ export default function Home() {
               fillOpacity={0.9}
               rx={23.5}
               shapeRendering="crispEdges"
+              onPress={() => handleCadastrar()
+              }
             />
           </G>
           <G filter="url(#f)">
@@ -440,7 +525,7 @@ export default function Home() {
           fontStyle: 'italic',
           color: 'white'
         }}
-        value={nomeUsuario} onChangeText={setNomeUsuario} placeholder="Nome" placeholderTextColor="#fff"
+        value={nome} onChangeText={setNome} placeholder="Nome" placeholderTextColor="#fff"
       />
 
 
