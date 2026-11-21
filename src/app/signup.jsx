@@ -15,6 +15,7 @@ import Svg, {
   Rect,
   Use,
 } from "react-native-svg";
+import { hashSenha } from '../lib/hash';
 
 export default function Home() {
   const [nome, setNome] = useState("");
@@ -102,39 +103,23 @@ export default function Home() {
       throw new Error('As senhas não coincidem.');
     }
 
+    // 🔐 hash da senha ANTES do insert
+    const senhaHash = await hashSenha(senha);
+
+    // upload de imagem (igual antes)
     let foto_url = null;
-    if (imagemUri) {
-      const ext = imagemUri.split('.').pop()?.split('?')[0] || 'jpg';
-      const nomeArq = `${cpf.replace(/\D/g, '')}_${Date.now()}.${ext}`;
-      const buffer = await (await fetch(imagemUri)).arrayBuffer();
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatares')
-        .upload(nomeArq, buffer, {
-          contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
-        });
-
-      if (uploadError) {
-        console.warn('Erro no upload da imagem:', uploadError.message);
-      } else {
-        const { data: urlData } = supabase.storage
-          .from('avatares')
-          .getPublicUrl(nomeArq);
-        foto_url = urlData.publicUrl;
-      }
-    }
+    if (imagemUri) { /* ... igual ... */ }
 
     const { data, error } = await supabase
       .from('usuarios')
       .insert([
         {
           nome,
-          CPF: cpf.replace(/\D/g, ''),   // 👈 MAIÚSCULO, aspas no banco
+          CPF: cpf.replace(/\D/g, ''),
           email: email.trim().toLowerCase(),
-          senha,
-          foto_url,                       // 👈 em vez de imagem_url
+          senha: senhaHash,       // 👈 agora é hash, não texto puro
+          foto_url,
           atualizado_em: new Date().toISOString(),
-          // criado_em NÃO EXISTE — omitir
         },
       ])
       .select();

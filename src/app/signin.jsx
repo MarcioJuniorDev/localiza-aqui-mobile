@@ -5,6 +5,7 @@ import { Pressable, TextInput, View, Alert } from "react-native";
 import { router } from "expo-router";
 import { supabase } from './../../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { verificarSenha } from '../lib/hash';
 
 export default function Home() {
 
@@ -41,7 +42,7 @@ export default function Home() {
   async function buscarUsuarioPorEmail(email) {
     const { data, error } = await supabase
       .from('usuarios')
-      .select('idUsuario, nome, email, senha')
+      .select('"idUsuario", nome, email, senha')
       .ilike('email', email)
       .maybeSingle();
 
@@ -59,7 +60,14 @@ export default function Home() {
     try {
       const usuario = await buscarUsuarioPorEmail(email);
 
-      if (!usuario || usuario.senha !== senha) {
+      // Se o usuário não existe OU a senha não bate → erro genérico
+      if (!usuario) {
+        Alert.alert("Erro", "Email ou senha incorretos.");
+        return;
+      }
+
+      const senhaOk = await verificarSenha(senha, usuario.senha);
+      if (!senhaOk) {
         Alert.alert("Erro", "Email ou senha incorretos.");
         return;
       }
