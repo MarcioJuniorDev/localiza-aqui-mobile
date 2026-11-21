@@ -282,14 +282,22 @@ export default function Home() {
                     stroke="#5A2A27"
                     rx={9.5}
                 />
+
+                <Image
+                    x={233}
+                    y={440}
+                    width={247}
+                    height={204}
+                    href={require("../assets/img/imagem-trofeu.png")}
+                />
             </Svg>
 
             {/* localização */}
-            <Text style={{ position: 'absolute', top: '85%', left: '20%', right: '5%', fontSize: 16}}>
+            <Text style={{ position: 'absolute', top: '85%', left: '20%', right: '5%', fontSize: 16 }}>
                 {endereco}
             </Text>
 
-            <Text style={{position: 'absolute', top: '81.2%', left: '38%', fontSize: 20}}>Localização</Text>
+            <Text style={{ position: 'absolute', top: '81.2%', left: '38%', fontSize: 20 }}>Localização</Text>
 
             {/* nome de usuário */}
             <Text style={{ position: 'absolute', top: '22%', left: '7%', fontSize: 20 }}>{nome}</Text>
