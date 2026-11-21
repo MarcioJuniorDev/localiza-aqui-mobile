@@ -20,47 +20,88 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect } from "react";
 import { buscarReputacaoUsuario } from "../services/reputacao";
 import { buscarConquistasUsuario } from "../services/conquistas";
+import * as Location from "expo-location";
 
 export default function Home() {
     const [localizacao, setLocalizacao] = useState("");
     const [nivel, setNivel] = useState("Bronze");
     const [nome, setNome] = useState("");
     const [email, setEmail] = useState("");
+    const [conquistas, setConquistas] = useState([]);
+    const [endereco, setEndereco] = useState(null);
 
     useEffect(() => {
-        async function carregarReputacao() {
-            try {
-                const usuarioSalvo = await AsyncStorage.getItem("@usuario");
+        let ativo = true;
 
-                if (!usuarioSalvo) {
-                    return;
-                }
+        // 1) Usuário + reputação + conquistas (uma única leitura)
+        async function carregarUsuarioEreputacao() { /* ... */ }
+
+        // (mantenha o bloco abaixo, que é o corrigido)
+        async function carregarUsuarioEReputacao() {
+            try {
+                const usuarioSalvo = await AsyncStorage.getItem(CHAVE_USUARIO);
+                if (!usuarioSalvo) return;
 
                 const usuario = JSON.parse(usuarioSalvo);
-                if (!usuario?.idUsuario) {
-                    return;
-                }
+                if (!ativo) return;
 
-                const reputacao = await buscarReputacaoUsuario(
-                    usuario.idUsuario
-                );
+                setNome(usuario.nome ?? '');
+                setEmail(usuario.email ?? '');
 
+                if (!usuario?.idUsuario) return;
+
+                const reputacao = await buscarReputacaoUsuario(usuario.idUsuario);
+                if (!ativo) return;
                 setNivel(reputacao.rank);
 
-                const conquistas = await buscarConquistasUsuario(
-                    usuario.idUsuario
-                );
-
-                console.log("nível: " + nivel + " conquistas: " + conquistas);
-
+                const listaConquistas = await buscarConquistasUsuario(usuario.idUsuario);
+                if (!ativo) return;
+                setConquistas(listaConquistas);
             } catch (error) {
-                console.error("Erro ao carregar reputação:", error);
+                console.error("Erro ao carregar usuário/reputação:", error);
             }
         }
 
-        carregarReputacao();
-        fnLerNomeUsuarioLocalmente();
-        fnLerEmailUsuarioLocalmente();
+        // 2) Localização + endereço (string!)
+        async function carregarLocalizacaoEEndereco() {
+            try {
+                const { status } =
+                    await Location.requestForegroundPermissionsAsync();
+                if (status !== "granted") return;
+
+                const posicao = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.High,
+                });
+                if (!ativo) return;
+
+                const [end] = await Location.reverseGeocodeAsync({
+                    latitude: posicao.coords.latitude,
+                    longitude: posicao.coords.longitude,
+                });
+                if (!ativo) return;
+
+                if (end) {
+                    const via = [end.street, end.streetNumber]
+                        .filter(Boolean).join(', ');
+                    const bairro = end.district ?? end.subregion ?? '';
+                    const cidadeUf = [end.city, end.region]
+                        .filter(Boolean).join(' - ');
+                    setEndereco(
+                        [via, bairro, cidadeUf].filter(Boolean).join(' • ')
+                    );
+                } else {
+                    setEndereco('Endereço indisponível');
+                }
+            } catch (error) {
+                console.error("Erro ao carregar localização/endereço:", error);
+                if (ativo) setEndereco('Erro ao obter endereço');
+            }
+        }
+
+        carregarUsuarioEReputacao();
+        carregarLocalizacaoEEndereco();
+
+        return () => { ativo = false; };
     }, []);
 
     function fnSair() {
@@ -250,43 +291,20 @@ export default function Home() {
             </Svg>
 
             {/* localização */}
-            {/* <TextInput
-                style={{
-                    position: "absolute",
-                    // equivalente a: x-50 (para o placeholder ficar à esqueda)
-                    left: 105,
-                    // equivalente a: y
-                    top: 640,
-                    // equivalente a: width
-                    width: 411,
-                    // equivalente a: height
-                    height: 44,
-                    backgroundColor: "transparent",
-                    fontSize: 13,
-                }}
-                value={localizacao} onChangeText={setLocalizacao} placeholder="Localização"
-            /> */}
-
-            {/* <Text
-                style={{
-                    position: "absolute",
-                    left: '30%',
-                    top: 573,
-                    fontSize: 20,
-                    color: "#000",
-                }}
-            >Parabéns nível {nivel}</Text> */}
+            <Text style={{ position: 'absolute', top: '85.75%', left: '23%' }}>
+                {endereco}
+            </Text>
 
             {/* nome de usuário */}
-            <Text style={{position: 'absolute', top: '22%', left: '7%', fontSize: 20}}>{nome}</Text>
+            <Text style={{ position: 'absolute', top: '22%', left: '7%', fontSize: 20 }}>{nome}</Text>
 
             {/* email do usuário */}
-            <Text style={{position: 'absolute', top: '24.5%', left: '7%', fontSize: 14}}>{email}</Text>
+            <Text style={{ position: 'absolute', top: '24.5%', left: '7%', fontSize: 14 }}>{email}</Text>
 
             {/* barra de XP dinâmica */}
 
             {/* nível */}
-            <Text style={{position: 'absolute', top: '47.5%', left: '19.5%', fontSize: 16}}>{nivel}</Text>
+            <Text style={{ position: 'absolute', top: '47.5%', left: '19.5%', fontSize: 16 }}>{nivel}</Text>
 
             {/* XP */}
 
