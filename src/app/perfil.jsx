@@ -44,7 +44,7 @@ export default function Home() {
 
                 setNome(usuario.nome ?? '');
                 setEmail(usuario.email ?? '');
-                setFotoUrl(usuario.fotoUrl ?? null);
+                setFotoUrl(usuario.foto_url ?? usuario.fotoUrl ?? null);
 
                 if (!usuario?.idUsuario) return;
 
