@@ -13,14 +13,17 @@ import Svg, {
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { BarraNavegacao } from "../components/barraNavegação";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { supabase } from './../../lib/supabase';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function EditarPerfil() {
     const [nome, setNome] = useState("");
     const [cpf, setCpf] = useState("");
     const [senha, setSenha] = useState("");
     const [email, setEmail] = useState("");
+    const [idUsuario, setIdUsuario] = useState(null);
 
     const [mostrarSenha, setMostrarSenha] = useState(false);
 
@@ -97,6 +100,63 @@ export default function EditarPerfil() {
             ]
         );
     }
+
+    async function deletarUsuario(idUsuario) {
+        if (!idUsuario) {
+            return { success: false, error: "Usuário não identificado." };
+        }
+
+        const { data, error } = await supabase
+            .from("usuarios")
+            .delete()
+            .eq("idUsuario", idUsuario)
+            .select();
+
+        if (error) return { success: false, error: error.message };
+        if (!data || data.length === 0) {
+            return {
+                success: false,
+                error: "Nenhum usuário encontrado ou sem permissão.",
+            };
+        }
+
+        return { success: true, data: data[0] };
+    }
+
+    function fnExcluirConta() {
+        Alert.alert(
+            "Excluir conta",
+            "Esta ação é permanente e não poderá ser desfeita. Deseja continuar?",
+            [
+                { text: "Cancelar", style: "cancel" },
+                {
+                    text: "Excluir",
+                    style: "destructive",
+                    onPress: async () => {
+                        const result = await deletarUsuario(idUsuario);
+
+                        if (result.success) {
+                            await AsyncStorage.removeItem("@idUsuario");
+                            Alert.alert("Conta excluída", "Sua conta foi deletada com sucesso.");
+                            router.replace("/welcome");
+                        } else {
+                            Alert.alert("Erro", result.error);
+                        }
+                    },
+                },
+            ]
+        );
+    }
+
+    useEffect(() => {
+        (async () => {
+            const json = await AsyncStorage.getItem("@usuario"); 
+            if (json) {
+                const usuario = JSON.parse(json);
+                setIdUsuario(usuario.idUsuario ?? null);
+            }
+        })();
+    }, []);
 
     return (
         <View style={{ flex: 1 }}>
@@ -363,6 +423,18 @@ export default function EditarPerfil() {
                     left: '17%',
                     width: 130,
                     height: 25
+                }}
+            />
+
+            {/* botão de deletar conta */}
+            <Pressable
+                onPress={() => fnExcluirConta()}
+                style={{
+                    position: 'absolute',
+                    top: '83.4%',
+                    left: '53.5%',
+                    width: 130,
+                    height: 25,
                 }}
             />
         </View >

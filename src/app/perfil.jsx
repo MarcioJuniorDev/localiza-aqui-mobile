@@ -1,21 +1,26 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Location from "expo-location";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { View, TextInput, Text, Alert, Pressable } from "react-native";
 import Svg, {
-    Defs,
-    Ellipse,
     G,
-    Image,
-    LinearGradient,
     Path,
     Rect,
-    Stop
-} from "react-native-svg";
+    Ellipse,
+    Mask,
+    Defs,
+    Pattern,
+    Use,
+    Image,
+    LinearGradient,
+    Stop,
+    ClipPath,
+} from "react-native-svg"
+import { router } from "expo-router";
 import { BarraNavegacao } from "../components/barraNavegação";
-import { buscarConquistasUsuario } from "../services/conquistas";
+import { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect } from "react";
 import { buscarReputacaoUsuario } from "../services/reputacao";
+import { buscarConquistasUsuario } from "../services/conquistas";
+import * as Location from "expo-location";
 
 export default function Home() {
     const [localizacao, setLocalizacao] = useState("");
@@ -98,26 +103,6 @@ export default function Home() {
 
         return () => { ativo = false; };
     }, []);
-
-    function fnExcluirConta() {
-        Alert.alert(
-            "Excluir conta",
-            "Esta ação é permanente e não poderá ser desfeita. Deseja continuar?",
-            [
-                {
-                    text: "Cancelar",
-                    style: "cancel",
-                },
-                {
-                    text: "Excluir",
-                    style: "destructive",
-                    onPress: async () => {
-                        router.replace("/welcome")
-                    },
-                },
-            ]
-        );
-    }
 
     // carregamento dos dados salvos localmente
     const CHAVE_USUARIO = '@usuario';
@@ -320,7 +305,7 @@ export default function Home() {
                     top: '17.3%',
                     left: '91%',
                     width: 30,
-                    height: 30
+                    height: 30,
                 }}
             />
             <BarraNavegacao />
