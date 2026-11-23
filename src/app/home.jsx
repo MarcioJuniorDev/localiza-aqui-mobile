@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, View, ActivityIndicator } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { RegistroFeedItem } from "../components/RegistroFeedItem";
@@ -20,14 +20,33 @@ const IMAGENS = [
 
 const CHAVE_USUARIO = "@usuario";
 
+function paraNumero(valor) {
+    if (valor == null) return 0;
+    if (typeof valor === "number") return valor;
+    return Number(String(valor).replace(",", ".")) || 0;
+}
+
+async function lerCarrinho() {
+    try {
+        const dados = await AsyncStorage.getItem("carrinho");
+        return dados ? JSON.parse(dados) : [];
+    } catch {
+        return [];
+    }
+}
+
+function paraMapa(carrinho) {
+    return Object.fromEntries(carrinho.map((i) => [i.nome, i.quantidade]));
+}
+
 export default function Home() {
     const { pesquisa } = useLocalSearchParams();
 
     const [imagemIndex, setImagemIndex] = useState(0);
     const [usuarioId, setUsuarioId] = useState(null);
     const [usuarioCarregado, setUsuarioCarregado] = useState(false);
-    const [curtidasLocais, setCurtidasLocais] = useState(null); // null = ainda não carregado
-    const [quantidadeCarrinho, setQuantidadeCarrinho] = useState(0);
+    const [curtidasLocais, setCurtidasLocais] = useState(null);
+    const [quantidades, setQuantidades] = useState({});
     const [idProduto, setIdProduto] = useState("");
 
     useEffect(() => {
@@ -39,25 +58,15 @@ export default function Home() {
 
     useEffect(() => {
         (async () => {
-            // 1) usuário
             const json = await AsyncStorage.getItem(CHAVE_USUARIO);
             const uid = json ? JSON.parse(json).idUsuario : null;
             setUsuarioId(uid);
 
-            // 2) cache de curtidas desse usuário
             const mapa = await lerCurtidasLocais(uid);
             setCurtidasLocais(mapa);
 
-            // 3) carrinho
-            const dadosCarrinho = await AsyncStorage.getItem("carrinho");
-            const carrinho = dadosCarrinho ? JSON.parse(dadosCarrinho) : [];
-            const item = carrinho.find((i) => i.nome === pesquisa);
-            setQuantidadeCarrinho(item?.quantidade ?? 0);
-
-            // 4) sinaliza que já temos usuário + cache
             setUsuarioCarregado(true);
 
-            // 5) produto
             if (!pesquisa) return;
             const { data, error } = await supabase
                 .from("produtos")
@@ -72,6 +81,12 @@ export default function Home() {
         })();
     }, [pesquisa]);
 
+    useFocusEffect(
+        useCallback(() => {
+            lerCarrinho().then((c) => setQuantidades(paraMapa(c)));
+        }, [])
+    );
+
     const {
         items,
         onEndReached,
@@ -83,26 +98,20 @@ export default function Home() {
     } = useFeed({
         usuarioId,
         produtoId: idProduto,
-        // só busca quando tiver usuário + cache prontos, e quando produtoId já veio
         enabled: usuarioCarregado && curtidasLocais !== null,
         curtidasLocais,
     });
 
     async function handleCurtir(item) {
         const idRegistro = item.idRegistro;
-        if (idRegistro == null) {
-            console.warn("Item sem idRegistro:", item);
-            return;
-        }
+        if (idRegistro == null) return;
 
         try {
             const resultado = await alternarCurtidaRegistro(idRegistro);
             atualizarLikeLocal(item.id, !!resultado?.curtido, resultado?.likes);
 
-            // Persiste localmente para sobreviver à navegação
             if (usuarioId != null) {
                 await salvarCurtidaLocal(usuarioId, idRegistro, !!resultado?.curtido);
-                // atualiza o estado local para futuras mesclagens no mesmo render
                 setCurtidasLocais((prev) => ({
                     ...(prev ?? {}),
                     [String(idRegistro)]: !!resultado?.curtido,
@@ -114,29 +123,63 @@ export default function Home() {
         }
     }
 
-    async function adicionarCarrinho(nomeProduto) {
-        const nome = nomeProduto ?? pesquisa;
-        if (!nome) return;
+    const adicionarCarrinho = useCallback(
+        async (item) => {
+            console.log("🛒 clicou no carrinho:", item?.produto);
+            if (!item) return;
 
-        try {
-            const dados = await AsyncStorage.getItem("carrinho");
-            const atual = dados ? JSON.parse(dados) : [];
-            const existente = atual.find((i) => i.nome === nome);
+            const nome = item.produto?.nome || pesquisa;
+            const id = item.produto?.id ?? (idProduto || null);
+            if (!nome) {
+                console.warn("🛒 sem nome de produto, abortando");
+                return;
+            }
 
-            const novo = existente
-                ? atual.map((i) =>
-                      i.nome === nome ? { ...i, quantidade: i.quantidade + 1 } : i
-                  )
-                : [...atual, { nome, quantidade: 1 }];
+            try {
+                let registros = [];
+                if (id != null) {
+                    const { data, error } = await supabase
+                        .from("registros")
+                        .select("preço, mercadoRegistro, criado_em")
+                        .eq("produtoRegistro", id);
 
-            await AsyncStorage.setItem("carrinho", JSON.stringify(novo));
+                    if (error) console.error("🛒 erro ao buscar preços:", error);
+                    else registros = data ?? [];
+                }
 
-            const atualizado = novo.find((i) => i.nome === nome);
-            setQuantidadeCarrinho(atualizado?.quantidade ?? 0);
-        } catch (e) {
-            console.error("Erro ao adicionar ao carrinho:", e);
-        }
-    }
+                const precoDoMercado = (idMercado) => {
+                    const doMercado = registros
+                        .filter((r) => Number(r.mercadoRegistro) === idMercado)
+                        .sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em));
+                    return paraNumero(doMercado[0]?.["preço"]);
+                };
+
+                const mercados = {
+                    assai: precoDoMercado(1),
+                    extra: precoDoMercado(2),
+                    sonda: precoDoMercado(3),
+                };
+
+                const carrinhoAtual = await lerCarrinho();
+                const existe = carrinhoAtual.some((i) => i.nome === nome);
+
+                const novoCarrinho = existe
+                    ? carrinhoAtual.map((i) =>
+                        i.nome === nome
+                            ? { ...i, quantidade: i.quantidade + 1, mercado: mercados }
+                            : i
+                    )
+                    : [...carrinhoAtual, { id, nome, quantidade: 1, mercado: mercados }];
+
+                await AsyncStorage.setItem("carrinho", JSON.stringify(novoCarrinho));
+                console.log("🛒 carrinho salvo:", novoCarrinho);
+                setQuantidades(paraMapa(novoCarrinho));
+            } catch (e) {
+                console.error("🛒 erro ao adicionar:", e);
+            }
+        },
+        [pesquisa, idProduto]
+    );
 
     const carregandoInicial = loading && items.length === 0;
 
@@ -144,16 +187,14 @@ export default function Home() {
         <View style={styles.screen}>
             <FlatList
                 data={items}
-                extraData={items}
+                extraData={[items, quantidades]}
                 keyExtractor={(item) => String(item.id)}
                 renderItem={({ item }) => (
                     <RegistroFeedItem
                         registro={item}
                         onCurtir={() => handleCurtir(item)}
                         onAdicionarCarrinho={adicionarCarrinho}
-                        quantidadeCarrinho={
-                            item.produto?.nome === pesquisa ? quantidadeCarrinho : 0
-                        }
+                        quantidadeCarrinho={quantidades[item.produto?.nome] ?? 0}
                     />
                 )}
                 onEndReached={onEndReached}
@@ -206,12 +247,7 @@ export default function Home() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: "#FEFAE0" },
-    center: {
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 32,
-        marginTop: 16,
-    },
+    center: { alignItems: "center", justifyContent: "center", padding: 32, marginTop: 16 },
     muted: { color: "#888", fontSize: 13, textAlign: "center", marginTop: 6 },
     erro: { color: "#c0392b", fontWeight: "700", fontSize: 16 },
     emptyEmoji: { fontSize: 48, marginBottom: 8 },

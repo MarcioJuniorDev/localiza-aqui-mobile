@@ -74,7 +74,7 @@ function RegistroFeedItemBase({
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => onAdicionarCarrinho?.(produto?.nome)}
+            onPress={() => onAdicionarCarrinho?.(registro)}
             activeOpacity={0.7}
             style={styles.cartBtn}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   likeIcon: { width: 28, height: 28 },
   likeCount: { fontSize: 16, fontWeight: "700", color: "#5A2A27" },
   cartBtn: { padding: 2 },
-  cartIcon: { width: 30, height: 30, right: '40%'},
+  cartIcon: { width: 30, height: 30, right: '40%' },
   cartBadge: {
     position: "absolute",
     top: -4,
