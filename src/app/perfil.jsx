@@ -1,26 +1,22 @@
-import { View, TextInput, Text, Alert, Pressable } from "react-native";
+import { Alert, Text, View } from "react-native";
 import Svg, {
+    ClipPath,
+    Defs,
+    Ellipse,
     G,
     Path,
     Rect,
-    Ellipse,
-    Mask,
-    Defs,
-    Pattern,
-    Use,
-    Image,
-    LinearGradient,
-    Stop,
-    ClipPath,
-} from "react-native-svg"
-import { router } from "expo-router";
-import { BarraNavegacao } from "../components/barraNavegação";
-import { useState } from "react";
+    Image as SvgImage,
+    Text as SvgText,
+} from "react-native-svg";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect } from "react";
-import { buscarReputacaoUsuario } from "../services/reputacao";
-import { buscarConquistasUsuario } from "../services/conquistas";
 import * as Location from "expo-location";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { BarraNavegacao } from "../components/barraNavegação";
+import { buscarConquistasUsuario } from "../services/conquistas";
+import { buscarReputacaoUsuario } from "../services/reputacao";
 
 export default function Home() {
     const [localizacao, setLocalizacao] = useState("");
@@ -29,6 +25,7 @@ export default function Home() {
     const [email, setEmail] = useState("");
     const [conquistas, setConquistas] = useState([]);
     const [endereco, setEndereco] = useState(null);
+    const [fotoUrl, setFotoUrl] = useState(null);
 
     useEffect(() => {
         let ativo = true;
@@ -47,6 +44,7 @@ export default function Home() {
 
                 setNome(usuario.nome ?? '');
                 setEmail(usuario.email ?? '');
+                setFotoUrl(usuario.foto_url ?? usuario.fotoUrl ?? null);
 
                 if (!usuario?.idUsuario) return;
 
@@ -57,6 +55,8 @@ export default function Home() {
                 const listaConquistas = await buscarConquistasUsuario(usuario.idUsuario);
                 if (!ativo) return;
                 setConquistas(listaConquistas);
+
+                console.log("Nível: " + reputacao.rank + " conquistas: " + listaConquistas);
             } catch (error) {
                 console.error("Erro ao carregar usuário/reputação:", error);
             }
@@ -142,6 +142,13 @@ export default function Home() {
                 viewBox="0 0 704 1524"
                 fill="none"
             >
+
+                {/* define o recorte circular da foto */}
+                <Defs>
+                    <ClipPath id="clipFoto">
+                        <Ellipse cx={130.5} cy={221} rx={98.5} ry={100} />
+                    </ClipPath>
+                </Defs>
                 {/* bege do fundo */}
                 <Path
                     fill="#FEFAE0"
@@ -179,10 +186,36 @@ export default function Home() {
                     </LinearGradient>
                 </Defs>
 
-                {/* espaço da foto */}
+                {/* espaço da foto — fundo laranja (placeholder) */}
                 <Ellipse cx={130.5} cy={221} fill="#DDA15E" rx={98.5} ry={100} />
 
                 
+                {/* foto do usuário (se existir) — recortada em círculo */}
+                {fotoUrl && (
+                    <SvgImage
+                        x={130.5 - 98.5}         // 32
+                        y={221 - 100}             // 121
+                        width={197}               // 2 * 98.5
+                        height={200}              // 2 * 100
+                        href={{ uri: fotoUrl }}
+                        preserveAspectRatio="xMidYMid slice"
+                        clipPath="url(#clipFoto)"
+                    />
+                )}
+
+                {/* placeholder: inicial do nome, quando não há foto */}
+                {!fotoUrl && (
+                    <SvgText
+                        x={130.5}
+                        y={221}
+                        fontSize={80}
+                        fill="#5A2A27"
+                        textAnchor="middle"
+                        alignmentBaseline="middle"
+                    >
+                        {(nome?.[0] ?? '?').toUpperCase()}
+                    </SvgText>
+                )}
 
                 {/* fundo da posição do ranking */}
                 <Rect
@@ -258,7 +291,7 @@ export default function Home() {
                     rx={9.5}
                 />
 
-                <Image
+                <SvgImage
                     x={233}
                     y={440}
                     width={247}

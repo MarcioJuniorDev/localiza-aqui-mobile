@@ -17,6 +17,7 @@ import Svg, {
 } from "react-native-svg";
 import { hashSenha } from '../lib/hash';
 import { File } from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { decode as base64ToArrayBuffer } from 'base64-arraybuffer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -49,6 +50,18 @@ export default function Home() {
       setImagem(resultado.assets[0]);
     }
   };
+
+  // armazenamento local dos dados do usuário
+  const CHAVE_USUARIO = '@usuario';
+
+  async function fnSalvarUsuarioLocalmente(usuario) {
+    try {
+      await AsyncStorage.setItem(CHAVE_USUARIO, JSON.stringify(usuario));
+      console.log('Usuário salvo com sucesso');
+    } catch (e) {
+      console.error('Erro ao salvar usuário:', e);
+    }
+  }
 
   function fnCamposPreenchidos() {
     if (email.trim() == "" || senha.trim() == "" || nome.trim() == "") {
@@ -198,6 +211,7 @@ export default function Home() {
       }));
       await AsyncStorage.setItem("@idUsuario", String(usuario.idUsuario));
 
+      await fnSalvarUsuarioLocalmente(usuario)
       router.push("/home");
     } catch (err) {
       Alert.alert("Erro", err.message);
