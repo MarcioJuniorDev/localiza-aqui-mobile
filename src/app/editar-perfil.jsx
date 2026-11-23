@@ -1,31 +1,111 @@
-import { View, TextInput, Alert, Pressable } from "react-native";
-import Svg, {
-    G,
-    Path,
-    Circle,
-    Rect,
-    Defs,
-    Pattern,
-    Use,
-    Image,
-    ClipPath,
-} from "react-native-svg"
-import { router } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
-import { BarraNavegacao } from "../components/barraNavegação";
-import { useState, useEffect } from "react";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { supabase } from './../../lib/supabase';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { Alert, Pressable, View, TextInput, Image as RNImage } from "react-native";
+import Svg, {
+    Circle,
+    ClipPath,
+    Defs,
+    Path,
+    Rect,
+    Image as SvgImage,
+    Text as SvgText
+} from "react-native-svg";
+import { BarraNavegacao } from "../components/barraNavegação";
+import { supabase } from '../../lib/supabase';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { carregarPerfil, atualizarPerfil, atualizarSenha, enviarFoto } from '../lib/usuarios';
 
 export default function EditarPerfil() {
     const [nome, setNome] = useState("");
     const [cpf, setCpf] = useState("");
     const [senha, setSenha] = useState("");
+    const [senhaAtual, setSenhaAtual] = useState("");
+
     const [email, setEmail] = useState("");
     const [idUsuario, setIdUsuario] = useState(null);
 
+    const [fotoUrl, setFotoUrl] = useState(null);   // URL da foto vinda do Supabase
+    const [imagem, setImagem] = useState(null);     // imagem escolhida localmente (ImagePicker)
+
     const [mostrarSenha, setMostrarSenha] = useState(false);
+    const SENHA_MASCARADA = "••••••••";
+
+    async function handleAtualizarPerfil() {
+        if (!nome.trim() || !email.trim()) {
+            Alert.alert("Campos obrigatórios", "Nome e email não podem ficar vazios.");
+            return;
+        }
+
+        const trocandoSenha = senha !== SENHA_MASCARADA && senha.trim() !== "";
+
+        if (trocandoSenha) {
+            if (!fnRequisitosSenha()) return;
+            if (!senhaAtual.trim()) {
+                Alert.alert("Senha atual", "Informe a senha atual para definir uma nova.");
+                return;
+            }
+        }
+
+        try {
+            const campos = {
+                nome: nome.trim(),
+                email: email.trim(),
+                CPF: cpf.trim() || null,
+            };
+
+            if (imagem?.uri) {
+                campos.foto_url = await enviarFoto(idUsuario, imagem.uri);
+            }
+
+            const r = await atualizarPerfil(idUsuario, campos);
+            if (!r.success) {
+                Alert.alert("Erro", r.error);
+                return;
+            }
+
+            if (imagem?.uri) {
+                setFotoUrl(r.data.foto_url);
+                setImagem(null);
+            }
+            console.log("foto_url salva:", r.data.foto_url);
+
+            if (trocandoSenha) {
+                const rs = await atualizarSenha(idUsuario, senhaAtual, senha);
+                if (!rs.success) {
+                    Alert.alert("Perfil atualizado", `Mas a senha não foi alterada: ${rs.error}`);
+                    return;
+                }
+                setSenhaAtual("");
+                setSenha(SENHA_MASCARADA);
+            }
+
+            fnAtualizarPerfil(); // seu alerta "Informações atualizadas com sucesso."
+        } catch (e) {
+            console.error("Erro ao atualizar perfil:", e);
+            Alert.alert("Erro", "Não foi possível atualizar o perfil. Tente novamente.");
+        }
+    }
+
+    async function buscarFotoUsuario(idUsuario) {
+        if (!idUsuario) return null;
+
+        const { data, error } = await supabase
+            .from("usuarios")
+            .select("foto_url")
+            .eq("idUsuario", idUsuario)
+            .single();
+
+        if (error) {
+            if (error.code !== "PGRST116") {
+                console.error("Erro ao buscar foto:", error);
+            }
+            return null;
+        }
+
+        return data?.foto_url ?? null;
+    }
 
     function fnAtualizarPerfil() {
         Alert.alert(
@@ -149,13 +229,26 @@ export default function EditarPerfil() {
     }
 
     useEffect(() => {
-        (async () => {
-            const json = await AsyncStorage.getItem("@usuario"); 
-            if (json) {
-                const usuario = JSON.parse(json);
+        let ativo = true;
+
+        async function carregarDados() {
+            try {
+                const usuario = await carregarPerfil();
+                if (!ativo || !usuario) return;
+
                 setIdUsuario(usuario.idUsuario ?? null);
+                setNome(usuario.nome ?? "");
+                setEmail(usuario.email ?? "");
+                setCpf(usuario.CPF ?? "");
+                setFotoUrl(usuario.foto_url ?? null);
+                setSenha(SENHA_MASCARADA);
+            } catch (e) {
+                console.error("Erro ao carregar perfil:", e);
             }
-        })();
+        }
+
+        carregarDados();
+        return () => { ativo = false; };
     }, []);
 
     return (
@@ -168,6 +261,11 @@ export default function EditarPerfil() {
                 viewBox="0 0 704 1524"
                 fill="none"
             >
+                <Defs>
+                    <ClipPath id="clipFoto">
+                        <Circle cx={347} cy={231} r={99.5} />
+                    </ClipPath>
+                </Defs>
                 {/* cor do fundo */}
                 <Path
                     fill="#FEFAE0"
@@ -176,6 +274,23 @@ export default function EditarPerfil() {
 
                 {/* círculo da foto de perfil */}
                 <Circle cx={347} cy={231} r={99.5} fill="#606C38" stroke="#5A2A27" />
+
+                {/* círculo da foto de perfil (fundo) */}
+                <Circle cx={347} cy={231} r={99.5} fill="#606C38" stroke="#5A2A27" />
+
+                {/* foto do usuário (vinda do Supabase ou do picker) */}
+                {!(imagem?.uri || fotoUrl) && (
+                    <SvgText
+                        x={347}
+                        y={231}
+                        fontSize={80}
+                        fill="#5A2A27"
+                        textAnchor="middle"
+                        alignmentBaseline="middle"
+                    >
+                        {(nome?.[0] ?? "?").toUpperCase()}
+                    </SvgText>
+                )}
 
                 {/* botão "Editar foto" */}
                 <Rect width={102} height={30} x={295} y={345} fill="#606C38" rx={10} />
@@ -239,7 +354,7 @@ export default function EditarPerfil() {
                 />
 
                 {/* botão "Atualizar perfil" */}
-                <Rect width={405} height={50} x={149} y={1109} fill="#606C38" rx={25} />
+                <Rect width={405} height={50} x={149} y={1109} fill="#606C38" rx={25} onPress={handleAtualizarPerfil} />
 
                 {/* texto "Email" e "Atualizar perfil"                 */}
                 <Path
@@ -321,15 +436,33 @@ export default function EditarPerfil() {
                 />
             </Svg>
 
-            {/* <BarraNavegacao /> */}
+            {(imagem?.uri || fotoUrl) && (
+                <RNImage
+                    source={{ uri: imagem?.uri ?? fotoUrl }}
+                    resizeMode="cover"
+                    onError={(e) => console.log("erro imagem editar:", e.nativeEvent)}
+                    pointerEvents="none"
+                    style={{
+                        position: "absolute",
+                        left: "35.16%",
+                        top: "9.7%",
+                        width: "28.27%",
+                        aspectRatio: 1,
+                        borderRadius: 999,
+                        overflow: "hidden",
+                    }}
+                />
+            )}
 
-            {/* <TextInput
+            <BarraNavegacao />
+
+            <TextInput
                 style={{
                     position: "absolute",
                     // equivalente a: x-50 (para o placeholder ficar à esqueda)
-                    left: 92,
+                    left: '22%',
                     // equivalente a: y
-                    top: 285,
+                    top: '32.5%',
                     // equivalente a: width
                     width: 411.266,
                     // equivalente a: height
@@ -338,15 +471,15 @@ export default function EditarPerfil() {
                     fontSize: 13,
                 }}
                 value={nome} onChangeText={setNome} placeholder="Nome"
-            /> */}
+            />
 
-            {/* <TextInput
+            <TextInput
                 style={{
                     position: "absolute",
                     // equivalente a: x-50 (para o placeholder ficar à esqueda)
-                    left: 92,
+                    left: '22%',
                     // equivalente a: y
-                    top: 335,
+                    top: '43%',
                     // equivalente a: width
                     width: 411.266,
                     // equivalente a: height
@@ -355,43 +488,53 @@ export default function EditarPerfil() {
                     fontSize: 13,
                 }}
                 value={cpf} onChangeText={setCpf} placeholder="CPF (opcional)"
-            /> */}
+            />
 
-            {/* <TextInput
+            {/* senha */}
+            <TextInput
                 style={{
                     position: "absolute",
-                    // equivalente a: x-50 (para o placeholder ficar à esqueda)
-                    left: 92,
-                    // equivalente a: y
-                    top: 385,
-                    // equivalente a: width
+                    left: '22%',
+                    top: '48%',
                     width: 411.266,
-                    // equivalente a: height
                     height: 44.792,
                     backgroundColor: "transparent",
                     fontSize: 13,
                 }}
-                value={senha} onChangeText={setSenha} placeholder="Senha" secureTextEntry={!mostrarSenha}
-            /> */}
-            {/* icone para mostrar/esconder senha */}
-            {/* <MaterialCommunityIcons
-                name={mostrarSenha ? "eye-off" : "eye"}
-                size={16}
-                color="#000"
-                onPress={() => setMostrarSenha(!mostrarSenha)}
-                style={{
-                    position: "absolute",
-                    left: 300,
-                    top: 400,
+                value={senha}
+                onChangeText={setSenha}
+                onFocus={() => {
+                    if (senha === SENHA_MASCARADA) setSenha("");
                 }}
-            /> */}
-            {/* <TextInput
+                onBlur={() => {
+                    if (senha === "") setSenha(SENHA_MASCARADA);
+                }}
+                placeholder="Senha"
+                secureTextEntry={senha === SENHA_MASCARADA ? true : !mostrarSenha}
+            />
+
+            {/* icone para mostrar/esconder senha (some enquanto a máscara está ativa) */}
+            {senha !== SENHA_MASCARADA && (
+                <MaterialCommunityIcons
+                    name={mostrarSenha ? "eye-off" : "eye"}
+                    size={16}
+                    color="#000"
+                    onPress={() => setMostrarSenha(!mostrarSenha)}
+                    style={{
+                        position: "absolute",
+                        left: '70%',
+                        top: '49%',
+                    }}
+                />
+            )}
+
+            <TextInput
                 style={{
                     position: "absolute",
                     // equivalente a: x-50 (para o placeholder ficar à esqueda)
-                    left: 92,
+                    left: '22%',
                     // equivalente a: y
-                    top: 435,
+                    top: '38%',
                     // equivalente a: width
                     width: 411.266,
                     // equivalente a: height
@@ -400,19 +543,19 @@ export default function EditarPerfil() {
                     fontSize: 13,
                 }}
                 value={email} onChangeText={setEmail} placeholder="Email"
-            /> */}
+            />
 
             {/* "apertável" para escolher imagem */}
-            {/* <Pressable
+            <Pressable
                 onPress={escolherImagem}
                 style={{
                     position: "absolute",
-                    left: 153,
-                    top: 100,
-                    width: 100,
-                    height: 100,
+                    left: '35.5%',
+                    top: '9.8%',
+                    width: 120,
+                    height: 150
                 }}
-            /> */}
+            />
 
             {/* botão de sair */}
             <Pressable
