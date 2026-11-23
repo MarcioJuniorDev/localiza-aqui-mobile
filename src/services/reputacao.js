@@ -45,6 +45,59 @@ export function calcularPontosPublicacao(totalCurtidas) {
     return Math.min(pontos, 30);
 }
 
+export function calcularProgressoRank(pontos, publicacoesValidadas) {
+
+    const rankAtual = [...RANKS].reverse().find(rank =>
+        pontos >= rank.pontos &&
+        publicacoesValidadas >= rank.publicacoesValidadas
+    );
+
+    const indiceAtual = RANKS.findIndex(
+        rank => rank.nome === rankAtual.nome
+    );
+
+    // Saphira é o rank máximo
+    if (indiceAtual === RANKS.length - 1) {
+        return {
+            proximoRank: null,
+            progresso: 100,
+            pontosRestantes: 0,
+            publicacoesRestantes: 0
+        };
+    }
+
+    const proximoRank = RANKS[indiceAtual + 1];
+
+    const pontosNecessarios = proximoRank.pontos - rankAtual.pontos;
+    const publicacoesNecessarias =
+        proximoRank.publicacoesValidadas - rankAtual.publicacoesValidadas;
+
+    const progressoPontos = Math.min(
+        pontos / proximoRank.pontos,
+        1
+    );
+
+    const progressoPublicacoes = Math.min(
+        publicacoesValidadas / proximoRank.publicacoesValidadas,
+        1
+    );
+
+    const progresso = Math.min(
+        progressoPontos,
+        progressoPublicacoes
+    ) * 100;
+
+    return {
+        proximoRank: proximoRank.nome,
+        progresso,
+        pontosRestantes: Math.max(0, proximoRank.pontos - pontos),
+        publicacoesRestantes: Math.max(
+            0,
+            proximoRank.publicacoesValidadas - publicacoesValidadas
+        )
+    };
+}
+
 
 export function calcularReputacao(registros, curtidas, idUsuario) {
 
@@ -86,11 +139,17 @@ export function calcularReputacao(registros, curtidas, idUsuario) {
         publicacoesValidadas >= rank.publicacoesValidadas
     );
 
+    const progresso = calcularProgressoRank(
+    pontosTotais,
+    publicacoesValidadas
+    );
+
     return {
         pontos: pontosTotais,
         publicacoesValidadas,
         totalCurtidas,
-        rank: rankAtual.nome
+        rank: rankAtual.nome,
+        ...progresso
     };
 }
 
@@ -127,9 +186,11 @@ export async function buscarReputacaoUsuario(idUsuario) {
     if (erroCurtidas) throw erroCurtidas;
 
     // Calcula a reputação
-    return calcularReputacao(
-        registros,
-        curtidas || [],
-        idUsuario
-    );
+    return {
+        pontos: 0,
+        publicacoesValidadas: 0,
+        totalCurtidas: 0,
+        rank: "Bronze",
+        ...calcularProgressoRank(0, 0)
+    };
 }

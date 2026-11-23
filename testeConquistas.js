@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 
 const { createClient } = require("@supabase/supabase-js");
@@ -8,7 +7,7 @@ const supabase = createClient(
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
 );
 
-const idUsuario = 1;
+const idUsuario = 8;
 
 function inicioDaSemana(data) {
     const dataPublicacao = new Date(data);
@@ -98,6 +97,15 @@ async function testarConquistas() {
         }
 
         curtidas = data || [];
+
+        console.log("\nIDs das publicações do usuário:", ids);
+
+        console.log("\nCurtidas encontradas no banco:", curtidas);
+
+        console.log(
+            "\nCurtidas feitas pelo próprio usuário:",
+        curtidas.filter(c => String(c.fkUsuario) === String(idUsuario))
+);
     }
 
     const usuariosQueCurtiram = new Set(
