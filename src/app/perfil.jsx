@@ -104,46 +104,6 @@ export default function Home() {
         return () => { ativo = false; };
     }, []);
 
-    function fnSair() {
-        Alert.alert(
-            "Sair",
-            "Tem certeza que deseja sair da conta?",
-            [
-                {
-                    text: "Cancelar",
-                    style: "cancel",
-                },
-                {
-                    text: "Sair",
-                    style: "destructive",
-                    onPress: () => {
-                        router.replace("/welcome")
-                    },
-                },
-            ]
-        );
-    }
-
-    function fnExcluirConta() {
-        Alert.alert(
-            "Excluir conta",
-            "Esta ação é permanente e não poderá ser desfeita. Deseja continuar?",
-            [
-                {
-                    text: "Cancelar",
-                    style: "cancel",
-                },
-                {
-                    text: "Excluir",
-                    style: "destructive",
-                    onPress: async () => {
-                        router.replace("/welcome")
-                    },
-                },
-            ]
-        );
-    }
-
     // carregamento dos dados salvos localmente
     const CHAVE_USUARIO = '@usuario';
 
@@ -211,11 +171,25 @@ export default function Home() {
                 </G>
 
                 {/* gradiente de cor em cima */}
-                <Path fill="url(#c)" stroke="#000" d="M5.5-1.5h699v244H5.5z" />
+                <Path fill="url(#a)" stroke="#000" d="M.5-1.5h699v244H.5z" />
+                <Defs>
+                    <LinearGradient
+                        id="a"
+                        x1={350}
+                        x2={350}
+                        y1={-2}
+                        y2={243}
+                        gradientUnits="userSpaceOnUse"
+                    >
+                        <Stop stopColor="#283618" />
+                        <Stop offset={1} stopColor="#749C45" />
+                    </LinearGradient>
+                </Defs>
 
                 {/* espaço da foto — fundo laranja (placeholder) */}
                 <Ellipse cx={130.5} cy={221} fill="#DDA15E" rx={98.5} ry={100} />
 
+                
                 {/* foto do usuário (se existir) — recortada em círculo */}
                 {fotoUrl && (
                     <SvgImage
@@ -324,6 +298,15 @@ export default function Home() {
                     height={204}
                     href={require("../assets/img/imagem-trofeu.png")}
                 />
+
+                {/* imagem config */}
+                <Image
+                    x={635}
+                    y={245}
+                    width={60}
+                    height={60}
+                    href={require("../assets/img/icone-config.png")}
+                />|
             </Svg>
 
             {/* localização */}
@@ -349,6 +332,17 @@ export default function Home() {
             {/* sua posição no ranking */}
 
             {/* conquistas do usuário */}
+
+            <Pressable
+                onPress={() => router.push("/editar-perfil")}
+                style={{
+                    position: 'absolute',
+                    top: '17.3%',
+                    left: '91%',
+                    width: 30,
+                    height: 30,
+                }}
+            />
             <BarraNavegacao />
         </View >
     );

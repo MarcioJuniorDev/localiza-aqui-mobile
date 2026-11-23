@@ -19,6 +19,7 @@ import { hashSenha } from '../lib/hash';
 import { File } from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { decode as base64ToArrayBuffer } from 'base64-arraybuffer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Home() {
   const [nome, setNome] = useState("");
@@ -190,14 +191,26 @@ export default function Home() {
 
     try {
       const usuario = await adicionarUsuario({
-        nome: nome,
+        nome,
         cpf,
         email,
         senha,
         confirmar_senha,
         imagemUri: imagem?.uri ?? null,
       });
+
       console.log('Criado:', usuario);
+
+      await AsyncStorage.setItem("@usuario", JSON.stringify({
+        idUsuario: usuario.idUsuario,
+        nome: usuario.nome,
+        email: usuario.email,
+        foto_url: usuario.foto_url ?? null,
+        CPF: usuario.CPF ?? null,
+        nivel: usuario.nivel ?? null,
+      }));
+      await AsyncStorage.setItem("@idUsuario", String(usuario.idUsuario));
+
       await fnSalvarUsuarioLocalmente(usuario)
       router.push("/home");
     } catch (err) {
