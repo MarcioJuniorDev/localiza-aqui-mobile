@@ -1,5 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../lib/supabase';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
+
 
 import { verificarSenha, hashSenha } from '../lib/hash';
 
@@ -58,49 +61,50 @@ export async function atualizarSenha(idUsuario, senhaAtual, novaSenha) {
 
 // atualiza campos do perfil e sincroniza o cache local
 export async function atualizarPerfil(idUsuario, campos) {
-  if (!idUsuario) return { success: false, error: 'Usuário não identificado.' };
+    if (!idUsuario) return { success: false, error: 'Usuário não identificado.' };
 
-  const { data, error } = await supabase
-    .from('usuarios')
-    .update({ ...campos, atualizado_em: new Date().toISOString() })
-    .eq('idUsuario', idUsuario)
-    .select(COLUNAS_PERFIL);
+    const { data, error } = await supabase
+        .from('usuarios')
+        .update({ ...campos, atualizado_em: new Date().toISOString() })
+        .eq('idUsuario', idUsuario)
+        .select(COLUNAS_PERFIL);
 
-  if (error) {
-    if (error.code === '23505') {
-      return { success: false, error: 'Já existe um usuário com esse nome.' };
+    if (error) {
+        if (error.code === '23505') {
+            return { success: false, error: 'Já existe um usuário com esse nome.' };
+        }
+        return { success: false, error: error.message };
     }
-    return { success: false, error: error.message };
-  }
 
-  if (!data || data.length === 0) {
-    return { success: false, error: 'Sem permissão para atualizar (verifique a policy de UPDATE).' };
-  }
+    if (!data || data.length === 0) {
+        return { success: false, error: 'Sem permissão para atualizar (verifique a policy de UPDATE).' };
+    }
 
-  const local = await obterUsuarioLocal();
-  const atualizado = { ...local, ...data[0] };
-  await salvarUsuarioLocal(atualizado);
+    const local = await obterUsuarioLocal();
+    const atualizado = { ...local, ...data[0] };
+    await salvarUsuarioLocal(atualizado);
 
-  return { success: true, data: atualizado };
+    return { success: true, data: atualizado };
 }
 
 // envia a foto escolhida para o Storage e devolve a URL pública
 export async function enviarFoto(idUsuario, uri) {
-  const ext = (uri.split('.').pop() || 'jpg').split('?')[0].toLowerCase();
-  const caminho = `${idUsuario}/${Date.now()}.${ext}`;
-  const buffer = await (await fetch(uri)).arrayBuffer();
+    const ext = (uri.split('.').pop() || 'jpg').split('?')[0].toLowerCase();
+    const caminho = `${idUsuario}/${Date.now()}.${ext}`;
 
-  const { error } = await supabase.storage
-    .from('avatares') // nome do bucket
-    .upload(caminho, buffer, {
-      contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
-      upsert: true,
-    });
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
 
-  if (error) throw error;
+    const { error } = await supabase.storage
+        .from('avatares')
+        .upload(caminho, decode(base64), {
+            contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+            upsert: true,
+        });
 
-  const { data } = supabase.storage.from('fotos').getPublicUrl(caminho);
-  return data.publicUrl;
+    if (error) throw error;
+
+    const { data } = supabase.storage.from('avatares').getPublicUrl(caminho);
+    return data.publicUrl;
 }
 
 // salva (mescla) no armazenamento local

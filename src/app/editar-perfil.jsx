@@ -2,9 +2,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, View, TextInput } from "react-native";
+import { Alert, Pressable, View, TextInput, Image as RNImage } from "react-native";
 import Svg, {
     Circle,
+    ClipPath,
+    Defs,
     Path,
     Rect,
     Image as SvgImage,
@@ -67,6 +69,7 @@ export default function EditarPerfil() {
                 setFotoUrl(r.data.foto_url);
                 setImagem(null);
             }
+            console.log("foto_url salva:", r.data.foto_url);
 
             if (trocandoSenha) {
                 const rs = await atualizarSenha(idUsuario, senhaAtual, senha);
@@ -258,6 +261,11 @@ export default function EditarPerfil() {
                 viewBox="0 0 704 1524"
                 fill="none"
             >
+                <Defs>
+                    <ClipPath id="clipFoto">
+                        <Circle cx={347} cy={231} r={99.5} />
+                    </ClipPath>
+                </Defs>
                 {/* cor do fundo */}
                 <Path
                     fill="#FEFAE0"
@@ -271,17 +279,7 @@ export default function EditarPerfil() {
                 <Circle cx={347} cy={231} r={99.5} fill="#606C38" stroke="#5A2A27" />
 
                 {/* foto do usuário (vinda do Supabase ou do picker) */}
-                {(imagem?.uri || fotoUrl) ? (
-                    <SvgImage
-                        x={347 - 99.5}           // 247.5
-                        y={231 - 99.5}           // 131.5
-                        width={199}
-                        height={199}
-                        href={imagem?.uri ?? fotoUrl}   // string
-                        preserveAspectRatio="xMidYMid slice"
-                        clipPath="url(#clipFoto)"
-                    />
-                ) : (
+                {!(imagem?.uri || fotoUrl) && (
                     <SvgText
                         x={347}
                         y={231}
@@ -437,6 +435,24 @@ export default function EditarPerfil() {
                     d="M417.23 1298.24v2.67h-8.39v4.22h7.992v2.78h-8.027v4.39h8.59v2.7h-11.637v-16.76h11.472Zm5.883 10.61-4.605-6.15h3.457l2.871 3.84 2.871-3.84h3.457l-4.594 6.15 4.594 6.15h-3.457l-2.871-3.84-2.871 3.84h-3.457l4.605-6.15Zm18.598 5.8c-1.016.23-2.07.35-3.164.35-4.375 0-6.563-2.13-6.563-6.39 0-3.94 2.188-5.91 6.563-5.91 1.094 0 2.148.11 3.164.35v2.46a12.705 12.705 0 0 0-2.93-.35c-2.461 0-3.691 1.15-3.691 3.45 0 2.62 1.23 3.93 3.691 3.93.938 0 1.914-.12 2.93-.35v2.46Zm5.156-16.41V1315h-3.105v-16.76h3.105Zm14.016 4.46v12.3h-2.426l-.375-1.57c-1.414 1.05-2.914 1.57-4.5 1.57-2.516 0-3.773-1.49-3.773-4.46v-7.84h3.105v7.75c0 1.36.594 2.04 1.781 2.04 1.008 0 2.035-.4 3.082-1.2v-8.59h3.106Zm6.047-4.46v2.46h-3.106v-2.46h3.106Zm0 4.46v12.3h-3.106v-12.3h3.106Zm2.941 12.3v-12.3h2.402l.387 1.57c1.078-1.05 2.219-1.57 3.422-1.57v2.5c-1.156 0-2.191.48-3.105 1.44v8.36h-3.106Zm12.656-3.83c0-2.45 1.782-3.67 5.344-3.67.836 0 1.672.08 2.508.23v-.92c0-1.1-.793-1.65-2.379-1.65-1.344 0-2.836.19-4.477.58v-2.46c1.641-.39 3.133-.58 4.477-.58 3.656 0 5.484 1.35 5.484 4.05v8.25h-1.804l-1.102-1.1a6.15 6.15 0 0 1-3.539 1.1c-3.008 0-4.512-1.28-4.512-3.83Zm7.852-1.33c-.781-.15-1.617-.23-2.508-.23-1.492 0-2.238.51-2.238 1.52 0 1.1.625 1.64 1.875 1.64 1.031 0 1.988-.32 2.871-.96v-1.97Zm20.402 4.81c-1.015.23-2.07.35-3.164.35-4.375 0-6.562-2.13-6.562-6.39 0-3.94 2.187-5.91 6.562-5.91 1.094 0 2.149.11 3.164.35v2.46a12.697 12.697 0 0 0-2.929-.35c-2.461 0-3.692 1.15-3.692 3.45 0 2.62 1.231 3.93 3.692 3.93.937 0 1.914-.12 2.929-.35v2.46Zm4.571-5.85c0 2.57.996 3.86 2.988 3.86s2.988-1.29 2.988-3.86c0-2.51-.996-3.76-2.988-3.76s-2.988 1.25-2.988 3.76Zm-3.106.05c0-4.13 2.031-6.19 6.094-6.19 4.062 0 6.094 2.06 6.094 6.19 0 4.11-2.032 6.17-6.094 6.17-4.047 0-6.078-2.06-6.094-6.17Zm14.531 6.15v-12.3h2.403l.386 1.8c1.18-1.2 2.524-1.8 4.032-1.8 2.914 0 4.371 1.51 4.371 4.54v7.76h-3.106v-7.76c0-1.36-.676-2.04-2.027-2.04-1.008 0-1.992.41-2.953 1.21v8.59h-3.106Zm13.957-14.3h2.297l.469 2h3.094v2.46h-2.754v5.66c0 1.14.496 1.72 1.488 1.72h1.266v2.46h-2.766c-2.062 0-3.094-1.11-3.094-3.32v-10.98Zm7.395 10.47c0-2.45 1.781-3.67 5.344-3.67.836 0 1.672.08 2.507.23v-.92c0-1.1-.793-1.65-2.378-1.65-1.344 0-2.836.19-4.477.58v-2.46c1.641-.39 3.133-.58 4.477-.58 3.656 0 5.484 1.35 5.484 4.05v8.25h-1.805l-1.101-1.1a6.152 6.152 0 0 1-3.539 1.1c-3.008 0-4.512-1.28-4.512-3.83Zm7.851-1.33c-.781-.15-1.617-.23-2.507-.23-1.493 0-2.239.51-2.239 1.52 0 1.1.625 1.64 1.875 1.64 1.032 0 1.989-.32 2.871-.96v-1.97Z"
                 />
             </Svg>
+
+            {(imagem?.uri || fotoUrl) && (
+                <RNImage
+                    source={{ uri: imagem?.uri ?? fotoUrl }}
+                    resizeMode="cover"
+                    onError={(e) => console.log("erro imagem editar:", e.nativeEvent)}
+                    pointerEvents="none"
+                    style={{
+                        position: "absolute",
+                        left: "35.16%",
+                        top: "9.7%",
+                        width: "28.27%",
+                        aspectRatio: 1,
+                        borderRadius: 999,
+                        overflow: "hidden",
+                    }}
+                />
+            )}
 
             <BarraNavegacao />
 

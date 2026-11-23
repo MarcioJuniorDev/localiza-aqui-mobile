@@ -15,11 +15,12 @@ import Svg, {
 import { supabase } from "./../../lib/supabase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import { BarraNavegacao } from "../components/barraNavegação";
 import { buscarConquistasUsuario } from "../services/conquistas";
 import { buscarReputacaoUsuario } from "../services/reputacao";
+import { Image as RNImage } from "react-native";
 
 export default function Home() {
     const [localizacao, setLocalizacao] = useState("");
@@ -32,119 +33,121 @@ export default function Home() {
 
     const CHAVE_USUARIO = '@usuario';
 
-    useEffect(() => {
-        let ativo = true;
+    useFocusEffect(
+        useCallback(() => {
+            let ativo = true;
 
-        // busca a URL da foto na tabela "usuarios" do Supabase
-        async function buscarFotoUsuario(idUsuario) {
-            if (!idUsuario) return null;
+            // busca a URL da foto na tabela "usuarios" do Supabase
+            async function buscarFotoUsuario(idUsuario) {
+                if (!idUsuario) return null;
 
-            const { data, error } = await supabase
-                .from("usuarios")
-                .select("foto_url")
-                .eq("idUsuario", idUsuario)
-                .single();
+                const { data, error } = await supabase
+                    .from("usuarios")
+                    .select("foto_url")
+                    .eq("idUsuario", idUsuario)
+                    .single();
 
-            if (error) {
-                // PGRST116 = nenhum registro encontrado → não é erro fatal
-                if (error.code !== "PGRST116") {
-                    console.error("Erro ao buscar foto:", error);
+                if (error) {
+                    // PGRST116 = nenhum registro encontrado → não é erro fatal
+                    if (error.code !== "PGRST116") {
+                        console.error("Erro ao buscar foto:", error);
+                    }
+                    return null;
                 }
-                return null;
+
+                return data?.foto_url ?? null;
             }
 
-            return data?.foto_url ?? null;
-        }
+            // 1) usuário + foto + reputação + conquistas
+            async function carregarUsuarioEReputacao() {
+                try {
+                    const usuarioSalvo = await AsyncStorage.getItem(CHAVE_USUARIO);
+                    if (!usuarioSalvo) return;
 
-        // 1) usuário + foto + reputação + conquistas
-        async function carregarUsuarioEReputacao() {
-            try {
-                const usuarioSalvo = await AsyncStorage.getItem(CHAVE_USUARIO);
-                if (!usuarioSalvo) return;
-
-                const usuario = JSON.parse(usuarioSalvo);
-                if (!ativo) return;
-
-                setNome(usuario.nome ?? "");
-                setEmail(usuario.email ?? "");
-
-                // tenta a foto já salva localmente
-                let foto = usuario.foto_url ?? usuario.fotoUrl ?? null;
-
-                // se não tiver, busca no Supabase
-                if (!foto && usuario?.idUsuario) {
-                    foto = await buscarFotoUsuario(usuario.idUsuario);
+                    const usuario = JSON.parse(usuarioSalvo);
                     if (!ativo) return;
 
-                    // persiste para não buscar toda vez
-                    if (foto) {
-                        await AsyncStorage.setItem(
-                            CHAVE_USUARIO,
-                            JSON.stringify({ ...usuario, foto_url: foto })
-                        );
+                    setNome(usuario.nome ?? "");
+                    setEmail(usuario.email ?? "");
+
+                    // tenta a foto já salva localmente
+                    let foto = usuario.foto_url ?? usuario.fotoUrl ?? null;
+
+                    // se não tiver, busca no Supabase
+                    if (!foto && usuario?.idUsuario) {
+                        foto = await buscarFotoUsuario(usuario.idUsuario);
+                        if (!ativo) return;
+
+                        // persiste para não buscar toda vez
+                        if (foto) {
+                            await AsyncStorage.setItem(
+                                CHAVE_USUARIO,
+                                JSON.stringify({ ...usuario, foto_url: foto })
+                            );
+                        }
                     }
+
+                    if (ativo) setFotoUrl(foto);
+
+                    if (!usuario?.idUsuario) return;
+
+                    const reputacao = await buscarReputacaoUsuario(usuario.idUsuario);
+                    if (!ativo) return;
+                    setNivel(reputacao?.rank ?? "Bronze");
+
+                    const listaConquistas = await buscarConquistasUsuario(usuario.idUsuario);
+                    if (!ativo) return;
+                    setConquistas(listaConquistas);
+
+                    console.log("foto:", foto);
+                    console.log("reputacao:", reputacao);
+                    console.log("conquistas:", listaConquistas);
+                } catch (error) {
+                    console.error("Erro ao carregar usuário/reputação:", error);
                 }
-
-                if (ativo) setFotoUrl(foto);
-
-                if (!usuario?.idUsuario) return;
-
-                const reputacao = await buscarReputacaoUsuario(usuario.idUsuario);
-                if (!ativo) return;
-                setNivel(reputacao?.rank ?? "Bronze");
-
-                const listaConquistas = await buscarConquistasUsuario(usuario.idUsuario);
-                if (!ativo) return;
-                setConquistas(listaConquistas);
-
-                console.log("foto:", foto);
-                console.log("reputacao:", reputacao);
-                console.log("conquistas:", listaConquistas);
-            } catch (error) {
-                console.error("Erro ao carregar usuário/reputação:", error);
             }
-        }
 
-        // 2) localização + endereço
-        async function carregarLocalizacaoEEndereco() {
-            try {
-                const { status } = await Location.requestForegroundPermissionsAsync();
-                if (status !== "granted") return;
+            // 2) localização + endereço
+            async function carregarLocalizacaoEEndereco() {
+                try {
+                    const { status } = await Location.requestForegroundPermissionsAsync();
+                    if (status !== "granted") return;
 
-                const posicao = await Location.getCurrentPositionAsync({
-                    accuracy: Location.Accuracy.High,
-                });
-                if (!ativo) return;
+                    const posicao = await Location.getCurrentPositionAsync({
+                        accuracy: Location.Accuracy.High,
+                    });
+                    if (!ativo) return;
 
-                const [end] = await Location.reverseGeocodeAsync({
-                    latitude: posicao.coords.latitude,
-                    longitude: posicao.coords.longitude,
-                });
-                if (!ativo) return;
+                    const [end] = await Location.reverseGeocodeAsync({
+                        latitude: posicao.coords.latitude,
+                        longitude: posicao.coords.longitude,
+                    });
+                    if (!ativo) return;
 
-                if (end) {
-                    const via = [end.street, end.streetNumber].filter(Boolean).join(", ");
-                    const bairro = end.district ?? end.subregion ?? "";
-                    const cidadeUf = [end.city, end.region].filter(Boolean).join(" - ");
-                    setEndereco(
-                        [via, bairro, cidadeUf].filter(Boolean).join(" • ")
-                    );
-                } else {
-                    setEndereco("Endereço indisponível");
+                    if (end) {
+                        const via = [end.street, end.streetNumber].filter(Boolean).join(", ");
+                        const bairro = end.district ?? end.subregion ?? "";
+                        const cidadeUf = [end.city, end.region].filter(Boolean).join(" - ");
+                        setEndereco(
+                            [via, bairro, cidadeUf].filter(Boolean).join(" • ")
+                        );
+                    } else {
+                        setEndereco("Endereço indisponível");
+                    }
+                } catch (error) {
+                    console.error("Erro ao carregar localização/endereço:", error);
+                    if (ativo) setEndereco("Erro ao obter endereço");
                 }
-            } catch (error) {
-                console.error("Erro ao carregar localização/endereço:", error);
-                if (ativo) setEndereco("Erro ao obter endereço");
             }
-        }
 
-        carregarUsuarioEReputacao();
-        carregarLocalizacaoEEndereco();
+            carregarUsuarioEReputacao();
+            carregarLocalizacaoEEndereco();
 
-        return () => {
-            ativo = false;
-        };
-    }, []);
+            return () => {
+                ativo = false;
+            };
+        }, [])
+    );
 
     async function fnLerNomeUsuarioLocalmente() {
         try {
@@ -229,18 +232,7 @@ export default function Home() {
                 <Ellipse cx={130.5} cy={221} fill="#DDA15E" rx={98.5} ry={100} />
 
 
-                {/* foto do usuário (se existir) */}
-                {fotoUrl ? (
-                    <SvgImage
-                        x={32}
-                        y={121}
-                        width={197}
-                        height={200}
-                        href={fotoUrl}
-                        preserveAspectRatio="xMidYMid slice"
-                        clipPath="url(#clipFoto)"
-                    />
-                ) : (
+                {!fotoUrl && (
                     <SvgText
                         x={130.5}
                         y={221}
@@ -344,6 +336,24 @@ export default function Home() {
                     href={require("../assets/img/icone-config.png")}
                 />
             </Svg>
+
+            {fotoUrl && (
+    <RNImage
+        source={{ uri: fotoUrl }}
+        resizeMode="cover"
+        pointerEvents="none"
+        onLoad={() => console.log("imagem carregou")}
+        onError={(e) => console.log("erro imagem:", e.nativeEvent)}
+        style={{
+            position: "absolute",
+            left: "4.55%",
+            top: "9%",
+            width: "28%",
+            aspectRatio: 1,
+            borderRadius: 999
+        }}
+    />
+)}
 
             {/* localização */}
             <Text style={{ position: 'absolute', top: '85%', left: '20%', right: '5%', fontSize: 16 }}>
