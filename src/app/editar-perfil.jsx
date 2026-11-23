@@ -13,12 +13,14 @@ import Svg, {
 import { BarraNavegacao } from "../components/barraNavegação";
 import { supabase } from '../../lib/supabase';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { carregarPerfil } from '../lib/usuarios';
+import { carregarPerfil, atualizarPerfil, atualizarSenha, enviarFoto } from '../lib/usuarios';
 
 export default function EditarPerfil() {
     const [nome, setNome] = useState("");
     const [cpf, setCpf] = useState("");
     const [senha, setSenha] = useState("");
+    const [senhaAtual, setSenhaAtual] = useState("");
+
     const [email, setEmail] = useState("");
     const [idUsuario, setIdUsuario] = useState(null);
 
@@ -26,6 +28,62 @@ export default function EditarPerfil() {
     const [imagem, setImagem] = useState(null);     // imagem escolhida localmente (ImagePicker)
 
     const [mostrarSenha, setMostrarSenha] = useState(false);
+    const SENHA_MASCARADA = "••••••••";
+
+    async function handleAtualizarPerfil() {
+        if (!nome.trim() || !email.trim()) {
+            Alert.alert("Campos obrigatórios", "Nome e email não podem ficar vazios.");
+            return;
+        }
+
+        const trocandoSenha = senha !== SENHA_MASCARADA && senha.trim() !== "";
+
+        if (trocandoSenha) {
+            if (!fnRequisitosSenha()) return;
+            if (!senhaAtual.trim()) {
+                Alert.alert("Senha atual", "Informe a senha atual para definir uma nova.");
+                return;
+            }
+        }
+
+        try {
+            const campos = {
+                nome: nome.trim(),
+                email: email.trim(),
+                CPF: cpf.trim() || null,
+            };
+
+            if (imagem?.uri) {
+                campos.foto_url = await enviarFoto(idUsuario, imagem.uri);
+            }
+
+            const r = await atualizarPerfil(idUsuario, campos);
+            if (!r.success) {
+                Alert.alert("Erro", r.error);
+                return;
+            }
+
+            if (imagem?.uri) {
+                setFotoUrl(r.data.foto_url);
+                setImagem(null);
+            }
+
+            if (trocandoSenha) {
+                const rs = await atualizarSenha(idUsuario, senhaAtual, senha);
+                if (!rs.success) {
+                    Alert.alert("Perfil atualizado", `Mas a senha não foi alterada: ${rs.error}`);
+                    return;
+                }
+                setSenhaAtual("");
+                setSenha(SENHA_MASCARADA);
+            }
+
+            fnAtualizarPerfil(); // seu alerta "Informações atualizadas com sucesso."
+        } catch (e) {
+            console.error("Erro ao atualizar perfil:", e);
+            Alert.alert("Erro", "Não foi possível atualizar o perfil. Tente novamente.");
+        }
+    }
 
     async function buscarFotoUsuario(idUsuario) {
         if (!idUsuario) return null;
@@ -180,6 +238,7 @@ export default function EditarPerfil() {
                 setEmail(usuario.email ?? "");
                 setCpf(usuario.CPF ?? "");
                 setFotoUrl(usuario.foto_url ?? null);
+                setSenha(SENHA_MASCARADA);
             } catch (e) {
                 console.error("Erro ao carregar perfil:", e);
             }
@@ -297,7 +356,7 @@ export default function EditarPerfil() {
                 />
 
                 {/* botão "Atualizar perfil" */}
-                <Rect width={405} height={50} x={149} y={1109} fill="#606C38" rx={25} />
+                <Rect width={405} height={50} x={149} y={1109} fill="#606C38" rx={25} onPress={handleAtualizarPerfil} />
 
                 {/* texto "Email" e "Atualizar perfil"                 */}
                 <Path
@@ -415,35 +474,43 @@ export default function EditarPerfil() {
                 value={cpf} onChangeText={setCpf} placeholder="CPF (opcional)"
             />
 
+            {/* senha */}
             <TextInput
                 style={{
                     position: "absolute",
-                    // equivalente a: x-50 (para o placeholder ficar à esqueda)
                     left: '22%',
-                    // equivalente a: y
                     top: '48%',
-                    // equivalente a: width
                     width: 411.266,
-                    // equivalente a: height
                     height: 44.792,
                     backgroundColor: "transparent",
                     fontSize: 13,
                 }}
-                value={senha} onChangeText={setSenha} placeholder="Senha" secureTextEntry={!mostrarSenha}
+                value={senha}
+                onChangeText={setSenha}
+                onFocus={() => {
+                    if (senha === SENHA_MASCARADA) setSenha("");
+                }}
+                onBlur={() => {
+                    if (senha === "") setSenha(SENHA_MASCARADA);
+                }}
+                placeholder="Senha"
+                secureTextEntry={senha === SENHA_MASCARADA ? true : !mostrarSenha}
             />
 
-            {/* icone para mostrar/esconder senha */}
-            <MaterialCommunityIcons
-                name={mostrarSenha ? "eye-off" : "eye"}
-                size={16}
-                color="#000"
-                onPress={() => setMostrarSenha(!mostrarSenha)}
-                style={{
-                    position: "absolute",
-                    left: '70%',
-                    top: '49%',
-                }}
-            />
+            {/* icone para mostrar/esconder senha (some enquanto a máscara está ativa) */}
+            {senha !== SENHA_MASCARADA && (
+                <MaterialCommunityIcons
+                    name={mostrarSenha ? "eye-off" : "eye"}
+                    size={16}
+                    color="#000"
+                    onPress={() => setMostrarSenha(!mostrarSenha)}
+                    style={{
+                        position: "absolute",
+                        left: '70%',
+                        top: '49%',
+                    }}
+                />
+            )}
 
             <TextInput
                 style={{
