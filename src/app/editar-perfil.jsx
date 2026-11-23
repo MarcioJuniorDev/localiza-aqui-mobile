@@ -7,8 +7,8 @@ import Svg, {
     Defs,
     Pattern,
     Use,
-    Image,
-    ClipPath,
+    Image as SvgImage, 
+    ClipPath, Text as SvgText,
 } from "react-native-svg"
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -25,7 +25,29 @@ export default function EditarPerfil() {
     const [email, setEmail] = useState("");
     const [idUsuario, setIdUsuario] = useState(null);
 
+    const [fotoUrl, setFotoUrl] = useState(null);   // URL da foto vinda do Supabase
+    const [imagem, setImagem] = useState(null);     // imagem escolhida localmente (ImagePicker)
+
     const [mostrarSenha, setMostrarSenha] = useState(false);
+
+    async function buscarFotoUsuario(idUsuario) {
+        if (!idUsuario) return null;
+
+        const { data, error } = await supabase
+            .from("usuarios")
+            .select("foto_url")
+            .eq("idUsuario", idUsuario)
+            .single();
+
+        if (error) {
+            if (error.code !== "PGRST116") {
+                console.error("Erro ao buscar foto:", error);
+            }
+            return null;
+        }
+
+        return data?.foto_url ?? null;
+    }
 
     function fnAtualizarPerfil() {
         Alert.alert(
@@ -149,13 +171,45 @@ export default function EditarPerfil() {
     }
 
     useEffect(() => {
-        (async () => {
-            const json = await AsyncStorage.getItem("@usuario"); 
-            if (json) {
+        let ativo = true;
+
+        async function carregarDados() {
+            try {
+                const json = await AsyncStorage.getItem("@usuario");
+                if (!json) return;
+
                 const usuario = JSON.parse(json);
+                if (!ativo) return;
+
                 setIdUsuario(usuario.idUsuario ?? null);
+                setNome(usuario.nome ?? "");
+                setEmail(usuario.email ?? "");
+
+                // 1) tenta a foto salva localmente
+                let foto = usuario.foto_url ?? usuario.fotoUrl ?? null;
+
+                // 2) se não tiver, busca no Supabase
+                if (!foto && usuario?.idUsuario) {
+                    foto = await buscarFotoUsuario(usuario.idUsuario);
+                    if (!ativo) return;
+
+                    // persiste
+                    if (foto) {
+                        await AsyncStorage.setItem(
+                            "@usuario",
+                            JSON.stringify({ ...usuario, foto_url: foto })
+                        );
+                    }
+                }
+
+                if (ativo) setFotoUrl(foto);
+            } catch (e) {
+                console.error("Erro ao carregar perfil:", e);
             }
-        })();
+        }
+
+        carregarDados();
+        return () => { ativo = false; };
     }, []);
 
     return (
@@ -176,6 +230,33 @@ export default function EditarPerfil() {
 
                 {/* círculo da foto de perfil */}
                 <Circle cx={347} cy={231} r={99.5} fill="#606C38" stroke="#5A2A27" />
+
+                {/* círculo da foto de perfil (fundo) */}
+                <Circle cx={347} cy={231} r={99.5} fill="#606C38" stroke="#5A2A27" />
+
+                {/* foto do usuário (vinda do Supabase ou do picker) */}
+                {(imagem?.uri || fotoUrl) ? (
+                    <SvgImage
+                        x={347 - 99.5}           // 247.5
+                        y={231 - 99.5}           // 131.5
+                        width={199}
+                        height={199}
+                        href={imagem?.uri ?? fotoUrl}   // string
+                        preserveAspectRatio="xMidYMid slice"
+                        clipPath="url(#clipFoto)"
+                    />
+                ) : (
+                    <SvgText
+                        x={347}
+                        y={231}
+                        fontSize={80}
+                        fill="#5A2A27"
+                        textAnchor="middle"
+                        alignmentBaseline="middle"
+                    >
+                        {(nome?.[0] ?? "?").toUpperCase()}
+                    </SvgText>
+                )}
 
                 {/* botão "Editar foto" */}
                 <Rect width={102} height={30} x={295} y={345} fill="#606C38" rx={10} />

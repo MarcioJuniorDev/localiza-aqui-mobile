@@ -19,7 +19,6 @@ import { hashSenha } from '../lib/hash';
 import { File } from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { decode as base64ToArrayBuffer } from 'base64-arraybuffer';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Home() {
   const [nome, setNome] = useState("");
