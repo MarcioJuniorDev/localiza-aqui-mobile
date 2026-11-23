@@ -1,4 +1,4 @@
-import { View, TextInput, Text, Alert } from "react-native";
+import { View, TextInput, Text, Alert, Pressable } from "react-native";
 import Svg, {
     G,
     Path,
@@ -303,6 +303,15 @@ export default function Home() {
                     height={204}
                     href={require("../assets/img/imagem-trofeu.png")}
                 />
+
+                {/* imagem config */}
+                <Image
+                    x={635}
+                    y={245}
+                    width={60}
+                    height={60}
+                    href={require("../assets/img/icone-config.png")}
+                />|
             </Svg>
 
             {/* localização */}
@@ -328,6 +337,17 @@ export default function Home() {
             {/* sua posição no ranking */}
 
             {/* conquistas do usuário */}
+
+            <Pressable
+                onPress={() => router.push("/editar-perfil")}
+                style={{
+                    position: 'absolute',
+                    top: '17.3%',
+                    left: '91%',
+                    width: 30,
+                    height: 30
+                }}
+            />
             <BarraNavegacao />
         </View >
     );
