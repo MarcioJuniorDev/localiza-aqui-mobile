@@ -1,26 +1,21 @@
-import { View, TextInput, Text, Alert, Pressable } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { Alert, Pressable, Text, View } from "react-native";
 import Svg, {
-    G,
-    Path,
-    Rect,
-    Ellipse,
-    Mask,
     Defs,
-    Pattern,
-    Use,
+    Ellipse,
+    G,
     Image,
     LinearGradient,
-    Stop,
-    ClipPath,
-} from "react-native-svg"
-import { router } from "expo-router";
+    Path,
+    Rect,
+    Stop
+} from "react-native-svg";
 import { BarraNavegacao } from "../components/barraNavegação";
-import { useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect } from "react";
-import { buscarReputacaoUsuario } from "../services/reputacao";
 import { buscarConquistasUsuario } from "../services/conquistas";
-import * as Location from "expo-location";
+import { buscarReputacaoUsuario } from "../services/reputacao";
 
 export default function Home() {
     const [localizacao, setLocalizacao] = useState("");
@@ -103,26 +98,6 @@ export default function Home() {
 
         return () => { ativo = false; };
     }, []);
-
-    function fnSair() {
-        Alert.alert(
-            "Sair",
-            "Tem certeza que deseja sair da conta?",
-            [
-                {
-                    text: "Cancelar",
-                    style: "cancel",
-                },
-                {
-                    text: "Sair",
-                    style: "destructive",
-                    onPress: () => {
-                        router.replace("/welcome")
-                    },
-                },
-            ]
-        );
-    }
 
     function fnExcluirConta() {
         Alert.alert(

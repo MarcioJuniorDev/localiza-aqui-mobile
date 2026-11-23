@@ -78,6 +78,26 @@ export default function EditarPerfil() {
         }
     };
 
+    function fnSair() {
+        Alert.alert(
+            "Sair",
+            "Tem certeza que deseja sair da conta?",
+            [
+                {
+                    text: "Cancelar",
+                    style: "cancel",
+                },
+                {
+                    text: "Sair",
+                    style: "destructive",
+                    onPress: () => {
+                        router.replace("/welcome")
+                    },
+                },
+            ]
+        );
+    }
+
     return (
         <View style={{ flex: 1 }}>
             <Svg
@@ -333,6 +353,18 @@ export default function EditarPerfil() {
                     height: 100,
                 }}
             /> */}
+
+            {/* botão de sair */}
+            <Pressable
+                onPress={() => fnSair()}
+                style={{
+                    position: 'absolute',
+                    top: '83.4%',
+                    left: '17%',
+                    width: 130,
+                    height: 25
+                }}
+            />
         </View >
     );
 }
