@@ -157,8 +157,8 @@ export default function Pesquisa() {
 
                 {/* logo */}
                 <Image
-                    x={360}
-                    y={200}
+                    x={380}
+                    y={185}
                     width={104}
                     height={148}
                     href={require("../assets/img/logo-localiza-aqui.png")}

@@ -9,11 +9,42 @@ export default function Favoritos() {
     const [carrinho, setCarrinho] = useState([]);
 
     async function carregarCarrinho() {
-        const dados = await AsyncStorage.getItem("carrinho");
+        try {
+            const dados = await AsyncStorage.getItem("carrinho");
 
-        if (dados) {
-            setCarrinho(JSON.parse(dados));
-        } else {
+            if (!dados) {
+                setCarrinho([]);
+                return;
+            }
+
+            const parsed = JSON.parse(dados);
+
+            if (!Array.isArray(parsed)) {
+                setCarrinho([]);
+                return;
+            }
+
+            // Filtra itens inválidos (sem mercado, sem quantidade, etc.)
+            const itensValidos = parsed.filter(
+                (item) =>
+                    item &&
+                    typeof item.nome === "string" &&
+                    typeof item.quantidade === "number" &&
+                    item.mercado &&
+                    typeof item.mercado === "object"
+            );
+
+            // (Opcional) Se algo foi descartado, persiste o estado limpo
+            if (itensValidos.length !== parsed.length) {
+                await AsyncStorage.setItem(
+                    "carrinho",
+                    JSON.stringify(itensValidos)
+                );
+            }
+
+            setCarrinho(itensValidos);
+        } catch (error) {
+            console.log("Erro ao carregar carrinho:", error);
             setCarrinho([]);
         }
     }
@@ -24,19 +55,19 @@ export default function Favoritos() {
 
     const totalAssai = carrinho.reduce(
         (total, item) =>
-            total + item.mercado.assai * item.quantidade,
+            total + (item.mercado?.assai ?? 0) * (item.quantidade ?? 0),
         0
     );
 
     const totalExtra = carrinho.reduce(
         (total, item) =>
-            total + item.mercado.extra * item.quantidade,
+            total + (item.mercado?.extra ?? 0) * (item.quantidade ?? 0),
         0
     );
 
     const totalSonda = carrinho.reduce(
         (total, item) =>
-            total + item.mercado.sonda * item.quantidade,
+            total + (item.mercado?.sonda ?? 0) * (item.quantidade ?? 0),
         0
     );
 
@@ -258,8 +289,8 @@ export default function Favoritos() {
                 </G>
                 {/* logo */}
                 <Image
-                    x={370}
-                    y={225}
+                    x={385}
+                    y={210}
                     width={104}
                     height={148}
                     href={require("../assets/img/logo-localiza-aqui.png")}
