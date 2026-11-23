@@ -258,8 +258,8 @@ export default function Favoritos() {
                 </G>
                 {/* logo */}
                 <Image
-                    x={370}
-                    y={225}
+                    x={385}
+                    y={210}
                     width={104}
                     height={148}
                     href={require("../assets/img/logo-localiza-aqui.png")}

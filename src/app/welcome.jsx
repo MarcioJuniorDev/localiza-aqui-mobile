@@ -58,79 +58,13 @@ export default function Home() {
                     transform="rotate(-.766 307.183 751.653)"
                 />
 
-                {/* figura: caixa da cesta */}
-                <Rect
-                    width={176}
-                    height={128}
-                    x={222.867}
-                    y={705.857}
-                    fill="#000"
-                    rx={15}
-                />
-
-                {/* figura: tampa da cesta */}
-                <Rect
-                    width={199}
-                    height={28}
-                    x={212.867}
-                    y={705.857}
-                    fill="#000"
-                    rx={10}
-                />
-
-                {/* figura: listra 1 da cesta */}
-                <Rect
-                    width={56.897}
-                    height={14.636}
-                    x={262.971}
-                    y={805.749}
-                    fill="#DDA15E"
-                    rx={7.318}
-                    transform="rotate(-89.216 262.971 805.749)"
-                />
-
-                {/* figura: listra 2 da cesta */}
-                <Rect
-                    width={56.897}
-                    height={14.636}
-                    x={302.971}
-                    y={805.749}
-                    fill="#DDA15E"
-                    rx={7.318}
-                    transform="rotate(-89.216 302.971 805.749)"
-                />
-
-                {/* figura: listra 3 da cesta */}
-                <Rect
-                    width={56.897}
-                    height={14.636}
-                    x={339.971}
-                    y={805.749}
-                    fill="#DDA15E"
-                    rx={7.318}
-                    transform="rotate(-89.216 339.971 805.749)"
-                />
-
-                {/* figura: borda dourada da alça da cesta */}
-                <Rect
-                    width={71.395}
-                    height={28}
-                    x={296.867}
-                    y={699.821}
-                    fill="#DDA15E"
-                    rx={14}
-                    transform="rotate(-38.009 296.867 699.821)"
-                />
-
-                {/* figura: alça da cesta */}
-                <Rect
-                    width={66.044}
-                    height={21.409}
-                    x={300.867}
-                    y={700.525}
-                    fill="#000"
-                    rx={10}
-                    transform="rotate(-38.009 300.867 700.525)"
+                {/* imagem: logo "localiza Aqui" */}
+                <Image
+                    x={170}
+                    y={656}
+                    width={245}
+                    height={200}
+                    href={require("../assets/img/logo-localiza-aqui.png")}
                 />
 
                 {/* figura: fundo verde de "Comece com o login" */}
@@ -176,15 +110,6 @@ export default function Home() {
                 />
 
                 {/* imagem: icone do google */}
-                {/* <Defs>
-                    <ClipPath id="googleClip">
-                        <Circle
-                            cx={220}
-                            cy={1199}
-                            r={29}
-                        />
-                    </ClipPath>
-                </Defs> */}
 
                 <Image
                     x={195}

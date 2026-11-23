@@ -316,8 +316,8 @@ export default function Adicionar() {
 
                 {/* imagem: logo localiza aqui */}
                 <Image
-                    x={368}
-                    y={159}
+                    x={380}
+                    y={170}
                     width={104}
                     height={148}
                     href={require("../assets/img/logo-localiza-aqui.png")}

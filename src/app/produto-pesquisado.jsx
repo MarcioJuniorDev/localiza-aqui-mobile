@@ -310,8 +310,8 @@ export default function Produto_pesquisado() {
 
                 {/* imagem: logo "localiza Aqui" */}
                 <Image
-                    x={376}
-                    y={168}
+                    x={385}
+                    y={155}
                     width={104}
                     height={148}
                     href={require("../assets/img/logo-localiza-aqui.png")}
