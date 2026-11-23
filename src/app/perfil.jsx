@@ -204,7 +204,20 @@ export default function Home() {
                 </G>
 
                 {/* gradiente de cor em cima */}
-                <Path fill="url(#c)" stroke="#000" d="M5.5-1.5h699v244H5.5z" />
+                <Path fill="url(#a)" stroke="#000" d="M.5-1.5h699v244H.5z" />
+                <Defs>
+                    <LinearGradient
+                        id="a"
+                        x1={350}
+                        x2={350}
+                        y1={-2}
+                        y2={243}
+                        gradientUnits="userSpaceOnUse"
+                    >
+                        <Stop stopColor="#283618" />
+                        <Stop offset={1} stopColor="#749C45" />
+                    </LinearGradient>
+                </Defs>
 
                 {/* espaço da foto */}
                 <Ellipse cx={130.5} cy={221} fill="#DDA15E" rx={98.5} ry={100} />
