@@ -182,6 +182,8 @@ export default function Home() {
                 {/* espaço da foto */}
                 <Ellipse cx={130.5} cy={221} fill="#DDA15E" rx={98.5} ry={100} />
 
+                
+
                 {/* fundo da posição do ranking */}
                 <Rect
                     width={265}
