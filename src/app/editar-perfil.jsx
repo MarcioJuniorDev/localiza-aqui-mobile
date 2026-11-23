@@ -1,22 +1,19 @@
-import { View, TextInput, Alert, Pressable } from "react-native";
-import Svg, {
-    G,
-    Path,
-    Circle,
-    Rect,
-    Defs,
-    Pattern,
-    Use,
-    Image as SvgImage, 
-    ClipPath, Text as SvgText,
-} from "react-native-svg"
-import { router } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
-import { BarraNavegacao } from "../components/barraNavegação";
-import { useState, useEffect } from "react";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { supabase } from './../../lib/supabase';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { Alert, Pressable, View, TextInput } from "react-native";
+import Svg, {
+    Circle,
+    Path,
+    Rect,
+    Image as SvgImage,
+    Text as SvgText
+} from "react-native-svg";
+import { BarraNavegacao } from "../components/barraNavegação";
+import { supabase } from '../../lib/supabase';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { carregarPerfil } from '../lib/usuarios';
 
 export default function EditarPerfil() {
     const [nome, setNome] = useState("");
@@ -175,34 +172,14 @@ export default function EditarPerfil() {
 
         async function carregarDados() {
             try {
-                const json = await AsyncStorage.getItem("@usuario");
-                if (!json) return;
-
-                const usuario = JSON.parse(json);
-                if (!ativo) return;
+                const usuario = await carregarPerfil();
+                if (!ativo || !usuario) return;
 
                 setIdUsuario(usuario.idUsuario ?? null);
                 setNome(usuario.nome ?? "");
                 setEmail(usuario.email ?? "");
-
-                // 1) tenta a foto salva localmente
-                let foto = usuario.foto_url ?? usuario.fotoUrl ?? null;
-
-                // 2) se não tiver, busca no Supabase
-                if (!foto && usuario?.idUsuario) {
-                    foto = await buscarFotoUsuario(usuario.idUsuario);
-                    if (!ativo) return;
-
-                    // persiste
-                    if (foto) {
-                        await AsyncStorage.setItem(
-                            "@usuario",
-                            JSON.stringify({ ...usuario, foto_url: foto })
-                        );
-                    }
-                }
-
-                if (ativo) setFotoUrl(foto);
+                setCpf(usuario.CPF ?? "");
+                setFotoUrl(usuario.foto_url ?? null);
             } catch (e) {
                 console.error("Erro ao carregar perfil:", e);
             }
@@ -402,15 +379,15 @@ export default function EditarPerfil() {
                 />
             </Svg>
 
-            {/* <BarraNavegacao /> */}
+            <BarraNavegacao />
 
-            {/* <TextInput
+            <TextInput
                 style={{
                     position: "absolute",
                     // equivalente a: x-50 (para o placeholder ficar à esqueda)
-                    left: 92,
+                    left: '22%',
                     // equivalente a: y
-                    top: 285,
+                    top: '32.5%',
                     // equivalente a: width
                     width: 411.266,
                     // equivalente a: height
@@ -419,15 +396,15 @@ export default function EditarPerfil() {
                     fontSize: 13,
                 }}
                 value={nome} onChangeText={setNome} placeholder="Nome"
-            /> */}
+            />
 
-            {/* <TextInput
+            <TextInput
                 style={{
                     position: "absolute",
                     // equivalente a: x-50 (para o placeholder ficar à esqueda)
-                    left: 92,
+                    left: '22%',
                     // equivalente a: y
-                    top: 335,
+                    top: '43%',
                     // equivalente a: width
                     width: 411.266,
                     // equivalente a: height
@@ -436,15 +413,15 @@ export default function EditarPerfil() {
                     fontSize: 13,
                 }}
                 value={cpf} onChangeText={setCpf} placeholder="CPF (opcional)"
-            /> */}
+            />
 
-            {/* <TextInput
+            <TextInput
                 style={{
                     position: "absolute",
                     // equivalente a: x-50 (para o placeholder ficar à esqueda)
-                    left: 92,
+                    left: '22%',
                     // equivalente a: y
-                    top: 385,
+                    top: '48%',
                     // equivalente a: width
                     width: 411.266,
                     // equivalente a: height
@@ -453,26 +430,28 @@ export default function EditarPerfil() {
                     fontSize: 13,
                 }}
                 value={senha} onChangeText={setSenha} placeholder="Senha" secureTextEntry={!mostrarSenha}
-            /> */}
+            />
+
             {/* icone para mostrar/esconder senha */}
-            {/* <MaterialCommunityIcons
+            <MaterialCommunityIcons
                 name={mostrarSenha ? "eye-off" : "eye"}
                 size={16}
                 color="#000"
                 onPress={() => setMostrarSenha(!mostrarSenha)}
                 style={{
                     position: "absolute",
-                    left: 300,
-                    top: 400,
+                    left: '70%',
+                    top: '49%',
                 }}
-            /> */}
-            {/* <TextInput
+            />
+
+            <TextInput
                 style={{
                     position: "absolute",
                     // equivalente a: x-50 (para o placeholder ficar à esqueda)
-                    left: 92,
+                    left: '22%',
                     // equivalente a: y
-                    top: 435,
+                    top: '38%',
                     // equivalente a: width
                     width: 411.266,
                     // equivalente a: height
@@ -481,19 +460,19 @@ export default function EditarPerfil() {
                     fontSize: 13,
                 }}
                 value={email} onChangeText={setEmail} placeholder="Email"
-            /> */}
+            />
 
             {/* "apertável" para escolher imagem */}
-            {/* <Pressable
+            <Pressable
                 onPress={escolherImagem}
                 style={{
                     position: "absolute",
-                    left: 153,
-                    top: 100,
-                    width: 100,
-                    height: 100,
+                    left: '35.5%',
+                    top: '9.8%',
+                    width: 120,
+                    height: 150
                 }}
-            /> */}
+            />
 
             {/* botão de sair */}
             <Pressable
