@@ -9,6 +9,7 @@ import { BarraNavegacao } from "../components/barraNavegação";
 import { useFeed } from "../hooks/useFeed";
 import { supabase } from "../../lib/supabase";
 import { alternarCurtidaRegistro } from "../services/curtidasService";
+import { lerCurtidasLocais, salvarCurtidaLocal } from "../utils/curtidasCache";
 
 const IMAGENS = [
     require("../assets/img/imagem-fundo-home-1.jpg"),
@@ -24,10 +25,11 @@ export default function Home() {
 
     const [imagemIndex, setImagemIndex] = useState(0);
     const [usuarioId, setUsuarioId] = useState(null);
+    const [usuarioCarregado, setUsuarioCarregado] = useState(false);
+    const [curtidasLocais, setCurtidasLocais] = useState(null); // null = ainda não carregado
     const [quantidadeCarrinho, setQuantidadeCarrinho] = useState(0);
     const [idProduto, setIdProduto] = useState("");
 
-    // carrossel
     useEffect(() => {
         const t = setInterval(() => {
             setImagemIndex((i) => (i + 1) % IMAGENS.length);
@@ -35,25 +37,33 @@ export default function Home() {
         return () => clearInterval(t);
     }, []);
 
-    // usuário + carrinho + produto
     useEffect(() => {
         (async () => {
+            // 1) usuário
             const json = await AsyncStorage.getItem(CHAVE_USUARIO);
-            if (json) setUsuarioId(JSON.parse(json).idUsuario);
+            const uid = json ? JSON.parse(json).idUsuario : null;
+            setUsuarioId(uid);
 
+            // 2) cache de curtidas desse usuário
+            const mapa = await lerCurtidasLocais(uid);
+            setCurtidasLocais(mapa);
+
+            // 3) carrinho
             const dadosCarrinho = await AsyncStorage.getItem("carrinho");
             const carrinho = dadosCarrinho ? JSON.parse(dadosCarrinho) : [];
             const item = carrinho.find((i) => i.nome === pesquisa);
             setQuantidadeCarrinho(item?.quantidade ?? 0);
 
-            if (!pesquisa) return;
+            // 4) sinaliza que já temos usuário + cache
+            setUsuarioCarregado(true);
 
+            // 5) produto
+            if (!pesquisa) return;
             const { data, error } = await supabase
                 .from("produtos")
                 .select("idProduto")
                 .eq("nome", pesquisa)
                 .single();
-
             if (error) {
                 console.error("❌ produto não encontrado:", pesquisa, error.message);
                 return;
@@ -62,7 +72,6 @@ export default function Home() {
         })();
     }, [pesquisa]);
 
-    // feed
     const {
         items,
         onEndReached,
@@ -71,9 +80,14 @@ export default function Home() {
         loading,
         atualizarLikeLocal,
         error: feedError,
-    } = useFeed({ usuarioId, produtoId: idProduto });
+    } = useFeed({
+        usuarioId,
+        produtoId: idProduto,
+        // só busca quando tiver usuário + cache prontos, e quando produtoId já veio
+        enabled: usuarioCarregado && curtidasLocais !== null,
+        curtidasLocais,
+    });
 
-    // curtir
     async function handleCurtir(item) {
         const idRegistro = item.idRegistro;
         if (idRegistro == null) {
@@ -83,23 +97,23 @@ export default function Home() {
 
         try {
             const resultado = await alternarCurtidaRegistro(idRegistro);
+            atualizarLikeLocal(item.id, !!resultado?.curtido, resultado?.likes);
 
-            const likesAtuais = item.likes ?? 0;
-            const novosLikes =
-                resultado?.likes != null
-                    ? resultado.likes
-                    : resultado?.curtido
-                        ? likesAtuais + 1
-                        : Math.max(0, likesAtuais - 1);
-
-            atualizarLikeLocal(item.id, !!resultado?.curtido, novosLikes);
+            // Persiste localmente para sobreviver à navegação
+            if (usuarioId != null) {
+                await salvarCurtidaLocal(usuarioId, idRegistro, !!resultado?.curtido);
+                // atualiza o estado local para futuras mesclagens no mesmo render
+                setCurtidasLocais((prev) => ({
+                    ...(prev ?? {}),
+                    [String(idRegistro)]: !!resultado?.curtido,
+                }));
+            }
         } catch (e) {
             console.error("Erro ao curtir:", e);
             alert(e.message);
         }
     }
 
-    // adicionar ao carrinho (recebe o nome do produto do item)
     async function adicionarCarrinho(nomeProduto) {
         const nome = nomeProduto ?? pesquisa;
         if (!nome) return;
@@ -111,8 +125,8 @@ export default function Home() {
 
             const novo = existente
                 ? atual.map((i) =>
-                    i.nome === nome ? { ...i, quantidade: i.quantidade + 1 } : i
-                )
+                      i.nome === nome ? { ...i, quantidade: i.quantidade + 1 } : i
+                  )
                 : [...atual, { nome, quantidade: 1 }];
 
             await AsyncStorage.setItem("carrinho", JSON.stringify(novo));
@@ -130,7 +144,8 @@ export default function Home() {
         <View style={styles.screen}>
             <FlatList
                 data={items}
-                keyExtractor={(item) => item.id}
+                extraData={items}
+                keyExtractor={(item) => String(item.id)}
                 renderItem={({ item }) => (
                     <RegistroFeedItem
                         registro={item}

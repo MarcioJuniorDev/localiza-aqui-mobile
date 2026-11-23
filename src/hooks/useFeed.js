@@ -2,37 +2,45 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { buscarFeed } from "../services/feedService";
 
-/**
- * Garante que todo item do feed exponha:
- *  - idRegistro: chave bruta do banco (usada nas chamadas à API)
- *  - id: chave estável em string (usada pelo keyExtractor/estado local)
- */
 function normalizarItem(item) {
   if (!item || typeof item !== "object") return item;
 
-  // o feedService pode usar nomes diferentes; tentamos os mais comuns
   const idRegistro =
     item.idRegistro ??
     item.id_registro ??
     item.registroId ??
     item.idReg ??
-    // fallback: se `id` já for numérico, é bem provável que seja o idRegistro
-    (typeof item.id === "number" ? item.id : null);
+    item.id;
 
-  if (idRegistro == null) {
-    console.warn(
-      "[useFeed] Item sem idRegistro. Verifique o feedService. Item:",
-      item
-    );
+  if (item.idRegistro == null) {
+    console.warn("[useFeed] idRegistro ausente no item, usando fallback:", item);
   }
 
-  // mantém `id` sempre string para evitar mismatch no estado local
   const id = item.id != null ? String(item.id) : String(idRegistro);
-
   return { ...item, id, idRegistro };
 }
 
-export function useFeed({ usuarioId = null, produtoId = null } = {}) {
+/**
+ * Mescla o cache local (fonte de verdade do que o usuário clicou)
+ * por cima do que veio da API.
+ */
+function aplicarCacheLocal(items, curtidasLocais) {
+  if (!curtidasLocais) return items;
+  return items.map((it) => {
+    const k = String(it.idRegistro);
+    if (Object.prototype.hasOwnProperty.call(curtidasLocais, k)) {
+      return { ...it, curtido: !!curtidasLocais[k] };
+    }
+    return it;
+  });
+}
+
+export function useFeed({
+  usuarioId = null,
+  produtoId = null,
+  enabled = true,
+  curtidasLocais = null,   // { [idRegistro]: boolean }
+} = {}) {
   const [items, setItems] = useState([]);
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
@@ -41,6 +49,11 @@ export function useFeed({ usuarioId = null, produtoId = null } = {}) {
   const [error, setError] = useState(null);
 
   const loadingRef = useRef(false);
+  // guarda a versão mais recente do cache sem recriar a função a cada render
+  const cacheRef = useRef(curtidasLocais);
+  useEffect(() => {
+    cacheRef.current = curtidasLocais;
+  }, [curtidasLocais]);
 
   const carregarPagina = useCallback(
     async (reset = false) => {
@@ -60,7 +73,8 @@ export function useFeed({ usuarioId = null, produtoId = null } = {}) {
           produtoId,
         });
 
-        const normalizados = (novos ?? []).map(normalizarItem);
+        const base = (novos ?? []).map(normalizarItem);
+        const normalizados = aplicarCacheLocal(base, cacheRef.current);
 
         setItems((prev) => (reset ? normalizados : [...prev, ...normalizados]));
         setCursor(proximoCursor);
@@ -77,32 +91,42 @@ export function useFeed({ usuarioId = null, produtoId = null } = {}) {
     [cursor, usuarioId, produtoId]
   );
 
-  // primeira página
+  // só busca quando o usuarioId está pronto (evita a 1ª req com null)
   useEffect(() => {
+    if (!enabled) return;
     carregarPagina(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usuarioId, produtoId]);
+  }, [usuarioId, produtoId, enabled]);
 
-  const onEndReached = () => {
+  const onEndReached = useCallback(() => {
     if (hasMore && !loadingRef.current) carregarPagina(false);
-  };
+  }, [hasMore, carregarPagina]);
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await carregarPagina(true);
-  };
+  }, [carregarPagina]);
 
-  // atualização otimista de like — aceita `id` (local) ou `idRegistro`
-  const atualizarLikeLocal = (id, curtido, likes) => {
+  const atualizarLikeLocal = useCallback((id, curtido, likes) => {
     setItems((prev) =>
       prev.map((r) => {
         const bate =
           String(r.id) === String(id) ||
           String(r.idRegistro) === String(id);
-        return bate ? { ...r, curtido, likes } : r;
+        if (!bate) return r;
+        return {
+          ...r,
+          curtido,
+          likes:
+            likes != null
+              ? likes
+              : curtido
+                ? (r.likes ?? 0) + 1
+                : Math.max(0, (r.likes ?? 0) - 1),
+        };
       })
     );
-  };
+  }, []);
 
   return {
     items,
