@@ -74,17 +74,25 @@ export default function Home() {
     } = useFeed({ usuarioId, produtoId: idProduto });
 
     // curtir
-    async function handleCurtir(id) {
+    async function handleCurtir(item) {
+        const idRegistro = item.idRegistro;
+        if (idRegistro == null) {
+            console.warn("Item sem idRegistro:", item);
+            return;
+        }
+
         try {
-            const resultado = await alternarCurtidaRegistro(id);
-            const item = items.find((i) => i.id === id);
+            const resultado = await alternarCurtidaRegistro(idRegistro);
+
+            const likesAtuais = item.likes ?? 0;
             const novosLikes =
-                resultado.likes != null
+                resultado?.likes != null
                     ? resultado.likes
-                    : resultado.curtido
-                    ? (item?.likes ?? 0) + 1
-                    : Math.max(0, (item?.likes ?? 0) - 1);
-            atualizarLikeLocal(id, resultado.curtido, novosLikes);
+                    : resultado?.curtido
+                        ? likesAtuais + 1
+                        : Math.max(0, likesAtuais - 1);
+
+            atualizarLikeLocal(item.id, !!resultado?.curtido, novosLikes);
         } catch (e) {
             console.error("Erro ao curtir:", e);
             alert(e.message);
@@ -103,8 +111,8 @@ export default function Home() {
 
             const novo = existente
                 ? atual.map((i) =>
-                      i.nome === nome ? { ...i, quantidade: i.quantidade + 1 } : i
-                  )
+                    i.nome === nome ? { ...i, quantidade: i.quantidade + 1 } : i
+                )
                 : [...atual, { nome, quantidade: 1 }];
 
             await AsyncStorage.setItem("carrinho", JSON.stringify(novo));
@@ -126,7 +134,7 @@ export default function Home() {
                 renderItem={({ item }) => (
                     <RegistroFeedItem
                         registro={item}
-                        onCurtir={() => handleCurtir(item.id)}
+                        onCurtir={() => handleCurtir(item)}
                         onAdicionarCarrinho={adicionarCarrinho}
                         quantidadeCarrinho={
                             item.produto?.nome === pesquisa ? quantidadeCarrinho : 0
