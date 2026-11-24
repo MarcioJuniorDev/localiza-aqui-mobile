@@ -183,3 +183,57 @@ export async function buscarReputacaoUsuario(idUsuario) {
 
     return calcularReputacao(registros, curtidas ?? [], idUsuario); // 👈 agora calcula de verdade
 }
+
+export async function buscarPosicaoRanking(idUsuario) {
+    // 1) busca todos os registros (só id e autor)
+    const { data: registros, error: erroRegistros } = await supabase
+        .from("registros")
+        .select("idRegistro, usuarioRegistro");
+
+    if (erroRegistros) throw erroRegistros;
+    if (!registros || registros.length === 0) {
+        return { posicao: null, total: 0, curtidas: 0 };
+    }
+
+    // 2) busca todas as curtidas
+    const { data: todasCurtidas, error: erroCurtidas } = await supabase
+        .from("curtidas")
+        .select("fkRegistro, fkUsuario");
+
+    if (erroCurtidas) throw erroCurtidas;
+
+    // 3) agrega curtidas por usuário (autor do registro), excluindo auto-curtida
+    const registroParaAutor = new Map(
+        registros.map(r => [String(r.idRegistro), String(r.usuarioRegistro)])
+    );
+
+    // por usuário, guarda o Set de quem curtiu cada registro dele (evita duplicata)
+    const curtidasPorUsuario = new Map(); // usuarioId -> Set de "registroId:curtidorId"
+
+    (todasCurtidas ?? []).forEach(c => {
+        const autor = registroParaAutor.get(String(c.fkRegistro));
+        if (!autor) return;
+        if (String(c.fkUsuario) === autor) return; // ignora auto-curtida
+
+        if (!curtidasPorUsuario.has(autor)) {
+            curtidasPorUsuario.set(autor, new Set());
+        }
+        curtidasPorUsuario.get(autor).add(`${c.fkRegistro}:${c.fkUsuario}`);
+    });
+
+    // 4) monta ranking: { usuarioId, curtidas }
+    const ranking = [...curtidasPorUsuario.entries()]
+        .map(([usuarioId, set]) => ({ usuarioId, curtidas: set.size }))
+        .sort((a, b) => b.curtidas - a.curtidas);
+
+    // 5) acha a posição do usuário (1-based)
+    const idx = ranking.findIndex(r => r.usuarioId === String(idUsuario));
+    const posicao = idx >= 0 ? idx + 1 : null;
+    const curtidas = idx >= 0 ? ranking[idx].curtidas : 0;
+
+    return {
+        posicao,                    // ex: 3 (3º lugar) ou null se não tem curtidas
+        total: ranking.length,      // quantos usuários têm curtidas
+        curtidas,                   // quantas curtidas o usuário recebeu
+    };
+}

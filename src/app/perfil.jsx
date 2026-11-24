@@ -19,7 +19,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { BarraNavegacao } from "../components/barraNavegação";
 import { buscarConquistasUsuario } from "../services/conquistas";
-import { buscarReputacaoUsuario } from "../services/reputacao";
+import { buscarReputacaoUsuario, buscarPosicaoRanking } from "../services/reputacao";
 import { Image as RNImage } from "react-native";
 
 const IMAGENS_CONQUISTAS = {
@@ -47,6 +47,10 @@ export default function Home() {
     const [proximoRank, setProximoRank] = useState(null);
     const [pontosRestantes, setPontosRestantes] = useState(0);
     const [publicacoesRestantes, setPublicacoesRestantes] = useState(0);
+
+    const [posicaoRanking, setPosicaoRanking] = useState(null);
+    const [totalRanking, setTotalRanking] = useState(0);
+    const [curtidasRanking, setCurtidasRanking] = useState(0);
 
     const CHAVE_USUARIO = '@usuario';
 
@@ -121,6 +125,15 @@ export default function Home() {
                     const listaConquistas = await buscarConquistasUsuario(usuario.idUsuario);
                     if (!ativo) return;
                     setConquistas(listaConquistas);
+
+                    // ranking
+                    const ranking = await buscarPosicaoRanking(usuario.idUsuario);
+                    if (!ativo) return;
+                    setPosicaoRanking(ranking?.posicao ?? null);
+                    setTotalRanking(ranking?.total ?? 0);
+                    setCurtidasRanking(ranking?.curtidas ?? 0);
+
+                    console.log("ranking:", ranking);
 
                     console.log("foto:", foto);
                     console.log("reputacao:", reputacao);
@@ -281,6 +294,21 @@ export default function Home() {
                     stroke="#5A2A27"
                     rx={12.5}
                 />
+
+                {/* texto da posição no ranking */}
+                <SvgText
+                    x={357}                            // centro do Rect: 224.5 + 265/2
+                    y={640}                            // centro vertical: 626.5 + 25/2 + ajuste
+                    fontSize={22}
+                    fill="#5A2A27"
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                    fontWeight="bold"
+                >
+                    {posicaoRanking
+                        ? `#${posicaoRanking} de ${totalRanking} • ${curtidasRanking} curtidas`
+                        : "Ainda sem curtidas"}
+                </SvgText>
 
                 {/* fundo verde da barra de XP */}
                 <Rect
