@@ -43,6 +43,11 @@ export default function Home() {
     const [endereco, setEndereco] = useState(null);
     const [fotoUrl, setFotoUrl] = useState(null);
 
+    const [progresso, setProgresso] = useState(0);
+    const [proximoRank, setProximoRank] = useState(null);
+    const [pontosRestantes, setPontosRestantes] = useState(0);
+    const [publicacoesRestantes, setPublicacoesRestantes] = useState(0);
+
     const CHAVE_USUARIO = '@usuario';
 
     useFocusEffect(
@@ -108,6 +113,10 @@ export default function Home() {
                     const reputacao = await buscarReputacaoUsuario(usuario.idUsuario);
                     if (!ativo) return;
                     setNivel(reputacao?.rank ?? "Bronze");
+                    setProgresso(reputacao?.progresso ?? 0);
+                    setProximoRank(reputacao?.proximoRank ?? null);
+                    setPontosRestantes(reputacao?.pontosRestantes ?? 0);
+                    setPublicacoesRestantes(reputacao?.publicacoesRestantes ?? 0);
 
                     const listaConquistas = await buscarConquistasUsuario(usuario.idUsuario);
                     if (!ativo) return;
@@ -204,6 +213,9 @@ export default function Home() {
                     <ClipPath id="clipFoto">
                         <Ellipse cx={130.5} cy={221} rx={98.5} ry={100} />
                     </ClipPath>
+                    <ClipPath id="clipXP">
+                        <Rect width={480} height={40} x={117.5} y={721.5} rx={19.5} />
+                    </ClipPath>
                 </Defs>
                 {/* bege do fundo */}
                 <Path
@@ -281,16 +293,50 @@ export default function Home() {
                     rx={19.5}
                 />
 
-                {/* fundo do nível */}
+                {/* track da barra de XP (laranja translúcido) */}
                 <Rect
-                    width={120}
+                    width={480}
                     height={40}
                     x={117.5}
                     y={721.5}
                     fill="#DDA15E"
-                    stroke="#5A2A27"
+                    fillOpacity={0.7}
                     rx={19.5}
                 />
+
+                {/* borda do track */}
+                <Rect
+                    width={479}
+                    height={39}
+                    x={118}
+                    y={722}
+                    fill="none"
+                    stroke="#5A2A27"
+                    rx={19}
+                />
+
+                {/* preenchimento do progresso (verde, cresce da esquerda) */}
+                <Rect
+                    width={Math.max(0, Math.min(480, (progresso / 100) * 480))}
+                    height={40}
+                    x={117.5}
+                    y={721.5}
+                    fill="#606C38"
+                    clipPath="url(#clipXP)"
+                />
+
+                {/* texto do progresso (%) — fora do track, à direita */}
+                <SvgText
+                    x={610}
+                    y={746}
+                    fontSize={16}
+                    fill="#5A2A27"
+                    textAnchor="start"
+                    alignmentBaseline="middle"
+                    fontWeight="bold"
+                >
+                    {`${Math.round(progresso)}%`}
+                </SvgText>
 
                 {/* fundo verde das conquistas */}
                 <Rect width={591} height={275} x={74} y={883} fill="#606C38" rx={20} />

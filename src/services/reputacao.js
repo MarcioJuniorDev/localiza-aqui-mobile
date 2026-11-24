@@ -73,12 +73,12 @@ export function calcularProgressoRank(pontos, publicacoesValidadas) {
         proximoRank.publicacoesValidadas - rankAtual.publicacoesValidadas;
 
     const progressoPontos = Math.min(
-        pontos / proximoRank.pontos,
+        (pontos - rankAtual.pontos) / pontosNecessarios,
         1
     );
 
     const progressoPublicacoes = Math.min(
-        publicacoesValidadas / proximoRank.publicacoesValidadas,
+        (publicacoesValidadas - rankAtual.publicacoesValidadas) / publicacoesNecessarias,
         1
     );
 
@@ -111,14 +111,14 @@ export function calcularReputacao(registros, curtidas, idUsuario) {
         // Exclui o próprio autor
         // Evita contar o mesmo usuário duas vezes
 
-    const usuariosQueConfirmaram = new Set(
-        curtidas
-            .filter((curtida) =>
-                String(curtida.fkRegistro) === String(registro.idRegistro) &&
-                String(curtida.fkUsuario) !== String(idUsuario)
-            )
-        .map((curtida) => String(curtida.fkUsuario))
-    );
+        const usuariosQueConfirmaram = new Set(
+            curtidas
+                .filter((curtida) =>
+                    String(curtida.fkRegistro) === String(registro.idRegistro) &&
+                    String(curtida.fkUsuario) !== String(idUsuario)
+                )
+                .map((curtida) => String(curtida.fkUsuario))
+        );
 
         const quantidade = usuariosQueConfirmaram.size;
 
@@ -140,8 +140,8 @@ export function calcularReputacao(registros, curtidas, idUsuario) {
     );
 
     const progresso = calcularProgressoRank(
-    pontosTotais,
-    publicacoesValidadas
+        pontosTotais,
+        publicacoesValidadas
     );
 
     return {
@@ -155,13 +155,10 @@ export function calcularReputacao(registros, curtidas, idUsuario) {
 
 
 export async function buscarReputacaoUsuario(idUsuario) {
-
-    // Busca publicações feitas pelo usuário
-    const { data: registros, error: erroRegistros } =
-        await supabase
-            .from("registros")
-            .select("idRegistro, usuarioRegistro")
-            .eq("usuarioRegistro", idUsuario);
+    const { data: registros, error: erroRegistros } = await supabase
+        .from("registros")
+        .select("idRegistro, usuarioRegistro")
+        .eq("usuarioRegistro", idUsuario);
 
     if (erroRegistros) throw erroRegistros;
 
@@ -170,27 +167,19 @@ export async function buscarReputacaoUsuario(idUsuario) {
             pontos: 0,
             publicacoesValidadas: 0,
             totalCurtidas: 0,
-            rank: "Bronze"
+            rank: "Bronze",
+            ...calcularProgressoRank(0, 0),
         };
     }
 
-    // Busca curtidas recebidas nessas publicações
     const ids = registros.map(r => r.idRegistro);
 
-    const { data: curtidas, error: erroCurtidas } =
-        await supabase
-            .from("curtidas")
-            .select("fkRegistro, fkUsuario")
-            .in("fkRegistro", ids);
+    const { data: curtidas, error: erroCurtidas } = await supabase
+        .from("curtidas")
+        .select("fkRegistro, fkUsuario")
+        .in("fkRegistro", ids);
 
     if (erroCurtidas) throw erroCurtidas;
 
-    // Calcula a reputação
-    return {
-        pontos: 0,
-        publicacoesValidadas: 0,
-        totalCurtidas: 0,
-        rank: "Bronze",
-        ...calcularProgressoRank(0, 0)
-    };
+    return calcularReputacao(registros, curtidas ?? [], idUsuario); // 👈 agora calcula de verdade
 }
