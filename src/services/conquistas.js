@@ -75,8 +75,8 @@ export async function buscarConquistasUsuario(usuarioId) {
             desbloqueada: verificarFrequencia(registros),
         },
         {
-            id: "superb",
-            nome: "Superb",
+            id: "raro",
+            nome: "Raro",
             descricao: "Alcance o rank máximo: Saphira.",
             desbloqueada: reputacao.rank === "Saphira",
         },
