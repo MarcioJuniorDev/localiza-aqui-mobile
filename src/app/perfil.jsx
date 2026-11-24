@@ -19,7 +19,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { BarraNavegacao } from "../components/barraNavegação";
 import { buscarConquistasUsuario } from "../services/conquistas";
-import { buscarReputacaoUsuario } from "../services/reputacao";
+import { buscarReputacaoUsuario, buscarPosicaoRanking } from "../services/reputacao";
 import { Image as RNImage } from "react-native";
 
 const IMAGENS_CONQUISTAS = {
@@ -42,6 +42,15 @@ export default function Home() {
     const [conquistas, setConquistas] = useState([]);
     const [endereco, setEndereco] = useState(null);
     const [fotoUrl, setFotoUrl] = useState(null);
+
+    const [progresso, setProgresso] = useState(0);
+    const [proximoRank, setProximoRank] = useState(null);
+    const [pontosRestantes, setPontosRestantes] = useState(0);
+    const [publicacoesRestantes, setPublicacoesRestantes] = useState(0);
+
+    const [posicaoRanking, setPosicaoRanking] = useState(null);
+    const [totalRanking, setTotalRanking] = useState(0);
+    const [curtidasRanking, setCurtidasRanking] = useState(0);
 
     const CHAVE_USUARIO = '@usuario';
 
@@ -108,10 +117,23 @@ export default function Home() {
                     const reputacao = await buscarReputacaoUsuario(usuario.idUsuario);
                     if (!ativo) return;
                     setNivel(reputacao?.rank ?? "Bronze");
+                    setProgresso(reputacao?.progresso ?? 0);
+                    setProximoRank(reputacao?.proximoRank ?? null);
+                    setPontosRestantes(reputacao?.pontosRestantes ?? 0);
+                    setPublicacoesRestantes(reputacao?.publicacoesRestantes ?? 0);
 
                     const listaConquistas = await buscarConquistasUsuario(usuario.idUsuario);
                     if (!ativo) return;
                     setConquistas(listaConquistas);
+
+                    // ranking
+                    const ranking = await buscarPosicaoRanking(usuario.idUsuario);
+                    if (!ativo) return;
+                    setPosicaoRanking(ranking?.posicao ?? null);
+                    setTotalRanking(ranking?.total ?? 0);
+                    setCurtidasRanking(ranking?.curtidas ?? 0);
+
+                    console.log("ranking:", ranking);
 
                     console.log("foto:", foto);
                     console.log("reputacao:", reputacao);
@@ -204,6 +226,9 @@ export default function Home() {
                     <ClipPath id="clipFoto">
                         <Ellipse cx={130.5} cy={221} rx={98.5} ry={100} />
                     </ClipPath>
+                    <ClipPath id="clipXP">
+                        <Rect width={480} height={40} x={117.5} y={721.5} rx={19.5} />
+                    </ClipPath>
                 </Defs>
                 {/* bege do fundo */}
                 <Path
@@ -270,6 +295,21 @@ export default function Home() {
                     rx={12.5}
                 />
 
+                {/* texto da posição no ranking */}
+                <SvgText
+                    x={357}                            // centro do Rect: 224.5 + 265/2
+                    y={640}                            // centro vertical: 626.5 + 25/2 + ajuste
+                    fontSize={22}
+                    fill="#5A2A27"
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                    fontWeight="bold"
+                >
+                    {posicaoRanking
+                        ? `#${posicaoRanking} de ${totalRanking} • ${curtidasRanking} curtidas`
+                        : "Ainda sem curtidas"}
+                </SvgText>
+
                 {/* fundo verde da barra de XP */}
                 <Rect
                     width={480}
@@ -281,16 +321,50 @@ export default function Home() {
                     rx={19.5}
                 />
 
-                {/* fundo do nível */}
+                {/* track da barra de XP (laranja translúcido) */}
                 <Rect
-                    width={120}
+                    width={480}
                     height={40}
                     x={117.5}
                     y={721.5}
                     fill="#DDA15E"
-                    stroke="#5A2A27"
+                    fillOpacity={0.7}
                     rx={19.5}
                 />
+
+                {/* borda do track */}
+                <Rect
+                    width={479}
+                    height={39}
+                    x={118}
+                    y={722}
+                    fill="none"
+                    stroke="#5A2A27"
+                    rx={19}
+                />
+
+                {/* preenchimento do progresso (verde, cresce da esquerda) */}
+                <Rect
+                    width={Math.max(0, Math.min(480, (progresso / 100) * 480))}
+                    height={40}
+                    x={117.5}
+                    y={721.5}
+                    fill="#606C38"
+                    clipPath="url(#clipXP)"
+                />
+
+                {/* texto do progresso (%) — fora do track, à direita */}
+                <SvgText
+                    x={610}
+                    y={746}
+                    fontSize={16}
+                    fill="#5A2A27"
+                    textAnchor="start"
+                    alignmentBaseline="middle"
+                    fontWeight="bold"
+                >
+                    {`${Math.round(progresso)}%`}
+                </SvgText>
 
                 {/* fundo verde das conquistas */}
                 <Rect width={591} height={275} x={74} y={883} fill="#606C38" rx={20} />
