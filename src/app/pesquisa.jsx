@@ -1,6 +1,6 @@
 import Svg, { Path, Rect, Circle, ClipPath, Image, Defs, G } from "react-native-svg";
 import { useState, useEffect } from 'react';
-import { TextInput, View, Pressable, Text } from "react-native";
+import { TextInput, View, Pressable, Text, Alert } from "react-native";
 import { router } from "expo-router";
 import { BarraNavegacao } from '../components/barraNavegação'
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -86,14 +86,13 @@ export default function Pesquisa() {
             .from("produtos")
             .select("nome")
             .ilike("nome", `${texto}%`);
-            
 
-            if (error) {
+        if (error) {
             console.error("Erro ao buscar produtos:", error);
             return;
         }
 
-        setProdutos(data);
+        setProdutos(data || []);
     }
 
     return (
@@ -200,7 +199,28 @@ export default function Pesquisa() {
                 returnKeyType="search"
                 submitBehavior="blurAndSubmit"
                 placeholder="Pesquisar produto"
-                onSubmitEditing={() => {
+                onSubmitEditing={async () => {
+                    if (!pesquisa || pesquisa.trim() === "") return;
+
+                    // Verifica se o produto existe (busca exata)
+                    const { data, error } = await supabase
+                        .from("produtos")
+                        .select("nome")
+                        .ilike("nome", pesquisa.trim());
+
+                    if (error) {
+                        Alert.alert("Erro", "Não foi possível verificar o produto.");
+                        return;
+                    }
+
+                    if (!data || data.length === 0) {
+                        Alert.alert(
+                            "Produto não encontrado",
+                            `Não encontramos nenhum produto com o nome "${pesquisa}".`
+                        );
+                        return; // bloqueia a navegação
+                    }
+
                     salvarLocal(pesquisa);
                     router.push({
                         pathname: "/produto-pesquisado",
