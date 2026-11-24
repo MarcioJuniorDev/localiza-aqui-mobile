@@ -7,7 +7,7 @@ const supabase = createClient(
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
 );
 
-const idUsuario = 2;
+const idUsuario = 8;
 
 const RANKS = [
     { nome: "Bronze", pontos: 0, publicacoesValidadas: 0 },
@@ -65,11 +65,63 @@ function calcularReputacao(registros, curtidas, idUsuario) {
         publicacoesValidadas >= rank.publicacoesValidadas
     );
 
+   const progresso = calcularProgressoRank(
+    pontosTotais,
+    publicacoesValidadas
+    );
+
     return {
         pontos: pontosTotais,
         publicacoesValidadas,
         totalCurtidas,
-        rank: rankAtual.nome
+        rank: rankAtual.nome,
+        ...progresso
+    };
+}
+
+function calcularProgressoRank(pontos, publicacoesValidadas) {
+
+    const rankAtual = [...RANKS].reverse().find(rank =>
+        pontos >= rank.pontos &&
+        publicacoesValidadas >= rank.publicacoesValidadas
+    );
+
+    const indiceAtual = RANKS.findIndex(
+        rank => rank.nome === rankAtual.nome
+    );
+
+    if (indiceAtual === RANKS.length - 1) {
+        return {
+            proximoRank: null,
+            progresso: 100,
+            pontosRestantes: 0,
+            publicacoesRestantes: 0
+        };
+    }
+
+    const proximoRank = RANKS[indiceAtual + 1];
+
+    const progressoPontos = Math.min(
+        pontos / proximoRank.pontos,
+        1
+    );
+
+    const progressoPublicacoes = Math.min(
+        publicacoesValidadas / proximoRank.publicacoesValidadas,
+        1
+    );
+
+    return {
+        proximoRank: proximoRank.nome,
+        progresso: Math.min(
+            progressoPontos,
+            progressoPublicacoes
+        ) * 100,
+        pontosRestantes: Math.max(0, proximoRank.pontos - pontos),
+        publicacoesRestantes: Math.max(
+            0,
+            proximoRank.publicacoesValidadas - publicacoesValidadas
+        )
     };
 }
 
@@ -150,11 +202,14 @@ console.log(
 console.log("\n===== TESTE DE PROGRESSÃO DE RANK =====");
 
 const cenariosRank = [
+    { pontos: 0, publicacoesValidadas: 0 },
+    { pontos: 80, publicacoesValidadas: 3 },
     { pontos: 99, publicacoesValidadas: 4 },
     { pontos: 100, publicacoesValidadas: 5 },
     { pontos: 250, publicacoesValidadas: 15 },
     { pontos: 500, publicacoesValidadas: 30 },
     { pontos: 800, publicacoesValidadas: 50 },
+    { pontos: 1200, publicacoesValidadas: 70 },
 ];
 
 cenariosRank.forEach((cenario) => {
@@ -163,7 +218,14 @@ cenariosRank.forEach((cenario) => {
         cenario.publicacoesValidadas >= r.publicacoesValidadas
     );
 
-    console.log(cenario, "=>", rank.nome);
+    const progresso = calcularProgressoRank(
+        cenario.pontos,
+        cenario.publicacoesValidadas
+    );
+
+    console.log("\nCenário:", cenario);
+    console.log("Rank:", rank.nome);
+    console.log("Progresso:", progresso);
 });
 
 testarReputacao();
