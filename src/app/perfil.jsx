@@ -355,9 +355,9 @@ export default function Home() {
 
                 {/* texto do progresso (%) — fora do track, à direita */}
                 <SvgText
-                    x={610}
-                    y={746}
-                    fontSize={16}
+                    x={540}
+                    y={742.5}
+                    fontSize={25}
                     fill="#5A2A27"
                     textAnchor="start"
                     alignmentBaseline="middle"
