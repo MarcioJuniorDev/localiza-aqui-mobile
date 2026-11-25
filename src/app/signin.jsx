@@ -259,9 +259,9 @@ export default function Home() {
           height: 44,
           backgroundColor: "transparent",
           fontSize: 17,
-          color: 'white'
+          color: '#fff'
         }}
-        value={email} onChangeText={setEmail} placeholder="Email"
+        value={email} onChangeText={setEmail} placeholder="Email" placeholderTextColor="#fff"
       />
 
       {/* senha */}
@@ -278,9 +278,9 @@ export default function Home() {
           height: 44.792,
           backgroundColor: "transparent",
           fontSize: 17,
-          color: 'white'
+          color: '#fff'
         }}
-        value={senha} onChangeText={setSenha} placeholder="Senha" secureTextEntry={!mostrar_senha}
+        value={senha} onChangeText={setSenha} placeholder="Senha" secureTextEntry={!mostrar_senha} placeholderTextColor="#fff"
       />
       {/* icone para mostrar/esconder senha */}
       <MaterialCommunityIcons
