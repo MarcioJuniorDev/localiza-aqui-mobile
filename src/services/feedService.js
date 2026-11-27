@@ -1,6 +1,8 @@
 // services/feedService.js
 import { supabase } from "../../lib/supabase";
 
+import { buscarRanksAutores } from "./reputacao";
+
 const PAGE_SIZE = 10;
 
 export async function buscarFeed({ cursor = null, usuarioId = null, produtoId = null } = {}) {
@@ -58,6 +60,8 @@ export async function buscarFeed({ cursor = null, usuarioId = null, produtoId = 
     }
   }
 
+  const ranks = await buscarRanksAutores(data.map(r => r.usuarioRegistro));
+
   const items = data.map((r) => {
     const k = String(r.idRegistro);
     return {
@@ -72,6 +76,7 @@ export async function buscarFeed({ cursor = null, usuarioId = null, produtoId = 
         id: String(r.usuarios?.idUsuario ?? ""),
         nome: r.usuarios?.nome ?? "—",
         foto_url: r.usuarios?.foto_url ?? null,
+        rank: ranks[String(r.usuarioRegistro)] ?? null,
       },
       mercado: {
         id: r.mercados?.idMercado ?? null,

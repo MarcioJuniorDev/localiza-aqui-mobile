@@ -108,7 +108,7 @@ export default function Home() {
 
         try {
             const resultado = await alternarCurtidaRegistro(idRegistro);
-            atualizarLikeLocal(item.id, !!resultado?.curtido, resultado?.likes);
+            atualizarLikeLocal(item.id, !!resultado?.curtido, resultado?.likes, resultado?.idAutor, resultado?.reputacaoAutor?.rank);
 
             if (usuarioId != null) {
                 await salvarCurtidaLocal(usuarioId, idRegistro, !!resultado?.curtido);
