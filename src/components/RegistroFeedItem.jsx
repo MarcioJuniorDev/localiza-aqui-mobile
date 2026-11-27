@@ -42,6 +42,7 @@ function RegistroFeedItemBase({
         <Text style={styles.autor} numberOfLines={1}>
           {usuario?.nome ?? "—"}
         </Text>
+        <Text style={styles.rank}>{usuario?.rank ?? "Rank indisponível"}</Text>
       </View>
 
       {/* mercado + data */}
@@ -99,6 +100,7 @@ export const RegistroFeedItem = memo(
     prev.registro.id === next.registro.id &&
     prev.registro.curtido === next.registro.curtido &&
     prev.registro.likes === next.registro.likes &&
+    prev.registro.usuario?.rank === next.registro.usuario?.rank &&
     prev.quantidadeCarrinho === next.quantidadeCarrinho &&
     prev.onCurtir === next.onCurtir &&
     prev.onAdicionarCarrinho === next.onAdicionarCarrinho
@@ -117,6 +119,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: 8 },
   avatar: { width: 32, height: 32, borderRadius: 16 },
   autor: { fontSize: 13, fontWeight: "700", color: "#283618", flex: 1 },
+  rank: { fontSize: 12, fontWeight: "700", color: "#FEFAE0", backgroundColor: "#606C38", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
   linhaInfo: {
     flexDirection: "row",
     justifyContent: "space-between",

@@ -18,7 +18,7 @@ import { supabase } from './../../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { verificarSenha } from '../lib/hash';
 
-export default function Home() {
+export default function SignIn() {
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");

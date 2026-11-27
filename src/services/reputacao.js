@@ -237,3 +237,17 @@ export async function buscarPosicaoRanking(idUsuario) {
         curtidas,                   // quantas curtidas o usuário recebeu
     };
 }
+
+// Busca uma vez por autor, reutilizando as regras do perfil.
+export async function buscarRanksAutores(ids) {
+    const autores = [...new Set(ids.filter(id => id != null).map(String))];
+    return Object.fromEntries(await Promise.all(autores.map(async id => {
+        try {
+            const reputacao = await buscarReputacaoUsuario(id);
+            return [id, reputacao.rank];
+        } catch (erro) {
+            console.error("Erro ao buscar rank:", erro);
+            return [id, null];
+        }
+    })));
+}

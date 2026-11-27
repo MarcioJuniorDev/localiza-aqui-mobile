@@ -107,12 +107,14 @@ export function useFeed({
     await carregarPagina(true);
   }, [carregarPagina]);
 
-  const atualizarLikeLocal = useCallback((id, curtido, likes) => {
+  const atualizarLikeLocal = useCallback((id, curtido, likes, idAutor, rank) => {
     setItems((prev) =>
       prev.map((r) => {
         const bate =
           String(r.id) === String(id) ||
           String(r.idRegistro) === String(id);
+        const autor = rank && idAutor != null && String(r.usuario?.id) === String(idAutor);
+        if (autor) r = { ...r, usuario: { ...r.usuario, rank } };
         if (!bate) return r;
         return {
           ...r,

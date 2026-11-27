@@ -1,3 +1,4 @@
+import { buscarRanksAutores } from "../services/reputacao";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -43,7 +44,7 @@ export default function Produto_pesquisado() {
     async function buscarRegistros(id) {
         const { data, error } = await supabase
             .from("registros")
-            .select("idRegistro, criado_em, preço, mercadoRegistro")
+            .select("idRegistro, criado_em, preço, mercadoRegistro, usuarioRegistro, usuarios:usuarioRegistro(nome)")
             .eq("produtoRegistro", id)
             .order("criado_em", { ascending: false }); // mais recente primeiro
 
@@ -78,6 +79,7 @@ export default function Produto_pesquisado() {
             }
         }
 
+        const ranks = await buscarRanksAutores(data.map(r => r.usuarioRegistro));
         const registrosFormatados = data.map((registro) => {
             let mercado;
 
@@ -97,6 +99,7 @@ export default function Produto_pesquisado() {
 
             return {
                 ...registro,
+                rank: ranks[String(registro.usuarioRegistro)] ?? null,
                 mercado,
                 likes: contagem[String(registro.idRegistro)] || 0,
                 curtido: idsCurtidos.has(String(registro.idRegistro)),
@@ -276,8 +279,11 @@ export default function Produto_pesquisado() {
             const resultado = await alternarCurtidaRegistro(idR);
 
             setRegistros((anteriores) =>
-                anteriores.map((r) =>
-                    String(r.idRegistro) === String(idR)
+                anteriores.map((r) => {
+                    if (String(r.usuarioRegistro) === String(resultado.idAutor) && resultado.reputacaoAutor?.rank) {
+                        r = { ...r, rank: resultado.reputacaoAutor.rank };
+                    }
+                    return String(r.idRegistro) === String(idR)
                         ? {
                             ...r,
                             curtido: resultado.curtido,
@@ -285,8 +291,8 @@ export default function Produto_pesquisado() {
                                 ? (r.likes || 0) + 1
                                 : Math.max(0, (r.likes || 0) - 1),
                         }
-                        : r
-                )
+                        : r;
+                })
             );
 
             console.log("Reputação atualizada:", resultado.reputacaoAutor);
@@ -367,6 +373,9 @@ export default function Produto_pesquisado() {
                         {/* registros */}
                         {registros.map((registro, index) => (
                             <G key={registro.idRegistro} transform={`translate(0, ${index * 150})`}>
+                                <SvgText x={116} y={470} fontSize={17} fill="#283618" fontWeight="bold">
+                                    {(registro.usuarios?.nome ?? "—").slice(0, 24)} • {registro.rank ?? "Rank indisponível"}
+                                </SvgText>
                                 <SvgText x={116} y={505} fontSize={36} fill="#000" fontWeight="bold">
                                     {registro.mercado}
                                 </SvgText>
